@@ -1,0 +1,168 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.eyuel.smartspend"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="35" />
+10
+11    <!-- SMS Permissions for expense tracking -->
+12    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+12-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:5:5-70
+12-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:5:22-67
+13    <uses-permission android:name="android.permission.READ_SMS" />
+13-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:6:5-67
+13-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:6:22-64
+14    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+14-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:7:5-77
+14-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:7:22-74
+15
+16    <permission
+16-->[androidx.core:core:1.13.1] /home/eyuel/.gradle/caches/8.13/transforms/386ae91423afa60028c7aa0a92912256/transformed/core-1.13.1/AndroidManifest.xml:22:5-24:47
+17        android:name="com.eyuel.smartspend.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+17-->[androidx.core:core:1.13.1] /home/eyuel/.gradle/caches/8.13/transforms/386ae91423afa60028c7aa0a92912256/transformed/core-1.13.1/AndroidManifest.xml:23:9-81
+18        android:protectionLevel="signature" />
+18-->[androidx.core:core:1.13.1] /home/eyuel/.gradle/caches/8.13/transforms/386ae91423afa60028c7aa0a92912256/transformed/core-1.13.1/AndroidManifest.xml:24:9-44
+19
+20    <uses-permission android:name="com.eyuel.smartspend.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+20-->[androidx.core:core:1.13.1] /home/eyuel/.gradle/caches/8.13/transforms/386ae91423afa60028c7aa0a92912256/transformed/core-1.13.1/AndroidManifest.xml:26:5-97
+20-->[androidx.core:core:1.13.1] /home/eyuel/.gradle/caches/8.13/transforms/386ae91423afa60028c7aa0a92912256/transformed/core-1.13.1/AndroidManifest.xml:26:22-94
+21
+22    <application
+22-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:9:5-31:19
+23        android:name="com.eyuel.smartspend.SmartSpendApp"
+23-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:10:9-38
+24        android:allowBackup="true"
+24-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:11:9-35
+25        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+25-->[androidx.core:core:1.13.1] /home/eyuel/.gradle/caches/8.13/transforms/386ae91423afa60028c7aa0a92912256/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
+26        android:dataExtractionRules="@xml/data_extraction_rules"
+26-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:12:9-65
+27        android:debuggable="true"
+28        android:extractNativeLibs="false"
+29        android:fullBackupContent="@xml/backup_rules"
+29-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:13:9-54
+30        android:icon="@mipmap/ic_launcher"
+30-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:14:9-43
+31        android:label="@string/app_name"
+31-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:15:9-41
+32        android:roundIcon="@mipmap/ic_launcher_round"
+32-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:16:9-54
+33        android:supportsRtl="true"
+33-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:17:9-35
+34        android:theme="@style/Theme.SmartSpend" >
+34-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:18:9-48
+35        <activity
+35-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:20:9-29:20
+36            android:name="com.eyuel.smartspend.MainActivity"
+36-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:21:13-41
+37            android:exported="true"
+37-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:22:13-36
+38            android:theme="@style/Theme.SmartSpend"
+38-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:23:13-52
+39            android:windowSoftInputMode="adjustResize" >
+39-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:24:13-55
+40            <intent-filter>
+40-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:25:13-28:29
+41                <action android:name="android.intent.action.MAIN" />
+41-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:26:17-69
+41-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:26:25-66
+42
+43                <category android:name="android.intent.category.LAUNCHER" />
+43-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:27:17-77
+43-->/home/eyuel/.gemini/antigravity-ide/scratch/SmartSpend/app/src/main/AndroidManifest.xml:27:27-74
+44            </intent-filter>
+45        </activity>
+46
+47        <provider
+47-->[androidx.emoji2:emoji2:1.3.0] /home/eyuel/.gradle/caches/8.13/transforms/e68f2872c220dca1a6e469130e905fa9/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+48            android:name="androidx.startup.InitializationProvider"
+48-->[androidx.emoji2:emoji2:1.3.0] /home/eyuel/.gradle/caches/8.13/transforms/e68f2872c220dca1a6e469130e905fa9/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
+49            android:authorities="com.eyuel.smartspend.androidx-startup"
+49-->[androidx.emoji2:emoji2:1.3.0] /home/eyuel/.gradle/caches/8.13/transforms/e68f2872c220dca1a6e469130e905fa9/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
+50            android:exported="false" >
+50-->[androidx.emoji2:emoji2:1.3.0] /home/eyuel/.gradle/caches/8.13/transforms/e68f2872c220dca1a6e469130e905fa9/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
+51            <meta-data
+51-->[androidx.emoji2:emoji2:1.3.0] /home/eyuel/.gradle/caches/8.13/transforms/e68f2872c220dca1a6e469130e905fa9/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+52                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+52-->[androidx.emoji2:emoji2:1.3.0] /home/eyuel/.gradle/caches/8.13/transforms/e68f2872c220dca1a6e469130e905fa9/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
+53                android:value="androidx.startup" />
+53-->[androidx.emoji2:emoji2:1.3.0] /home/eyuel/.gradle/caches/8.13/transforms/e68f2872c220dca1a6e469130e905fa9/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
+54            <meta-data
+54-->[androidx.lifecycle:lifecycle-process:2.8.7] /home/eyuel/.gradle/caches/8.13/transforms/b243210ba59dc974fee068369df66e8f/transformed/lifecycle-process-2.8.7/AndroidManifest.xml:29:13-31:52
+55                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+55-->[androidx.lifecycle:lifecycle-process:2.8.7] /home/eyuel/.gradle/caches/8.13/transforms/b243210ba59dc974fee068369df66e8f/transformed/lifecycle-process-2.8.7/AndroidManifest.xml:30:17-78
+56                android:value="androidx.startup" />
+56-->[androidx.lifecycle:lifecycle-process:2.8.7] /home/eyuel/.gradle/caches/8.13/transforms/b243210ba59dc974fee068369df66e8f/transformed/lifecycle-process-2.8.7/AndroidManifest.xml:31:17-49
+57            <meta-data
+57-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
+58                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+58-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
+59                android:value="androidx.startup" />
+59-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
+60        </provider>
+61
+62        <activity
+62-->[androidx.compose.ui:ui-test-manifest:1.7.6] /home/eyuel/.gradle/caches/8.13/transforms/1cfeeb25b1f7f0595cac4922c4ec93fe/transformed/ui-test-manifest-1.7.6/AndroidManifest.xml:23:9-25:39
+63            android:name="androidx.activity.ComponentActivity"
+63-->[androidx.compose.ui:ui-test-manifest:1.7.6] /home/eyuel/.gradle/caches/8.13/transforms/1cfeeb25b1f7f0595cac4922c4ec93fe/transformed/ui-test-manifest-1.7.6/AndroidManifest.xml:24:13-63
+64            android:exported="true" />
+64-->[androidx.compose.ui:ui-test-manifest:1.7.6] /home/eyuel/.gradle/caches/8.13/transforms/1cfeeb25b1f7f0595cac4922c4ec93fe/transformed/ui-test-manifest-1.7.6/AndroidManifest.xml:25:13-36
+65        <activity
+65-->[androidx.compose.ui:ui-tooling-android:1.7.6] /home/eyuel/.gradle/caches/8.13/transforms/f6e688ae4788b9a148f6ddfc36589ba9/transformed/ui-tooling-release/AndroidManifest.xml:23:9-25:39
+66            android:name="androidx.compose.ui.tooling.PreviewActivity"
+66-->[androidx.compose.ui:ui-tooling-android:1.7.6] /home/eyuel/.gradle/caches/8.13/transforms/f6e688ae4788b9a148f6ddfc36589ba9/transformed/ui-tooling-release/AndroidManifest.xml:24:13-71
+67            android:exported="true" />
+67-->[androidx.compose.ui:ui-tooling-android:1.7.6] /home/eyuel/.gradle/caches/8.13/transforms/f6e688ae4788b9a148f6ddfc36589ba9/transformed/ui-tooling-release/AndroidManifest.xml:25:13-36
+68
+69        <service
+69-->[androidx.room:room-runtime:2.6.1] /home/eyuel/.gradle/caches/8.13/transforms/5a7285ff0a26b862480bd2bfb6548ae4/transformed/room-runtime-2.6.1/AndroidManifest.xml:24:9-28:63
+70            android:name="androidx.room.MultiInstanceInvalidationService"
+70-->[androidx.room:room-runtime:2.6.1] /home/eyuel/.gradle/caches/8.13/transforms/5a7285ff0a26b862480bd2bfb6548ae4/transformed/room-runtime-2.6.1/AndroidManifest.xml:25:13-74
+71            android:directBootAware="true"
+71-->[androidx.room:room-runtime:2.6.1] /home/eyuel/.gradle/caches/8.13/transforms/5a7285ff0a26b862480bd2bfb6548ae4/transformed/room-runtime-2.6.1/AndroidManifest.xml:26:13-43
+72            android:exported="false" />
+72-->[androidx.room:room-runtime:2.6.1] /home/eyuel/.gradle/caches/8.13/transforms/5a7285ff0a26b862480bd2bfb6548ae4/transformed/room-runtime-2.6.1/AndroidManifest.xml:27:13-37
+73
+74        <receiver
+74-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
+75            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+75-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
+76            android:directBootAware="false"
+76-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
+77            android:enabled="true"
+77-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
+78            android:exported="true"
+78-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
+79            android:permission="android.permission.DUMP" >
+79-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
+80            <intent-filter>
+80-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
+81                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+81-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
+81-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
+82            </intent-filter>
+83            <intent-filter>
+83-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
+84                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+84-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
+84-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
+85            </intent-filter>
+86            <intent-filter>
+86-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
+87                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+87-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
+87-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
+88            </intent-filter>
+89            <intent-filter>
+89-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
+90                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+90-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
+90-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/eyuel/.gradle/caches/8.13/transforms/13aeafa42f4433f7cf9731d0e12268e3/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
+91            </intent-filter>
+92        </receiver>
+93    </application>
+94
+95</manifest>
