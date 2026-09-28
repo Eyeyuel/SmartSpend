@@ -18,7 +18,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
@@ -34,14 +35,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.eyuel.smartspend.domain.model.TimeframePeriod
 import com.eyuel.smartspend.ui.DashboardUiState
+import com.eyuel.smartspend.ui.FormatUtils
 import com.eyuel.smartspend.ui.TransactionFilter
 import com.eyuel.smartspend.ui.TransactionListViewModel
-import com.eyuel.smartspend.ui.components.AnalyticsBottomSheet
-import com.eyuel.smartspend.ui.components.EditTransactionBottomSheet
-import com.eyuel.smartspend.ui.components.FilterBar
-import com.eyuel.smartspend.ui.components.FinancialSummaryCard
-import com.eyuel.smartspend.ui.components.TransactionItemCard
+import com.eyuel.smartspend.ui.components.*
 import com.eyuel.smartspend.ui.theme.IncomeGreen
 import com.eyuel.smartspend.ui.theme.SmartSpendTheme
 
@@ -92,7 +91,6 @@ fun MainScreen(viewModel: TransactionListViewModel) {
         }
     }
 
-    // Show sync message toast/snackbar
     LaunchedEffect(uiState.syncMessage) {
         uiState.syncMessage?.let { msg ->
             snackbarHostState.showSnackbar(msg)
@@ -128,130 +126,73 @@ fun MainScreen(viewModel: TransactionListViewModel) {
                         }
                     }
                 },
-                actions = {
-                    IconButton(onClick = { viewModel.setAnalyticsVisible(true) }) {
-                        Icon(
-                            imageVector = Icons.Default.PieChart,
-                            contentDescription = "Spending Analytics",
-                            tint = Color.White
-                        )
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
+        },
+        bottomBar = {
+            NavigationBar(
+                containerColor = Color(0xFF0F172A),
+                tonalElevation = 8.dp
+            ) {
+                NavigationBarItem(
+                    selected = uiState.selectedTab == 0,
+                    onClick = { viewModel.setSelectedTab(0) },
+                    icon = { Icon(Icons.Default.ReceiptLong, contentDescription = "Ledger") },
+                    label = { Text("Ledger", fontWeight = FontWeight.SemiBold) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color.White,
+                        selectedTextColor = Color.White,
+                        indicatorColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = Color(0xFF64748B),
+                        unselectedTextColor = Color(0xFF64748B)
+                    )
+                )
+
+                NavigationBarItem(
+                    selected = uiState.selectedTab == 1,
+                    onClick = { viewModel.setSelectedTab(1) },
+                    icon = { Icon(Icons.Default.Insights, contentDescription = "Analytics") },
+                    label = { Text("Insights", fontWeight = FontWeight.SemiBold) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color.White,
+                        selectedTextColor = Color.White,
+                        indicatorColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = Color(0xFF64748B),
+                        unselectedTextColor = Color(0xFF64748B)
+                    )
+                )
+            }
         }
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 32.dp)
-        ) {
-            // Permission Banner (if not granted yet)
-            if (!hasSmsPermissions) {
-                item {
-                    PermissionBanner(
-                        onRequestPermissions = {
-                            val perms = mutableListOf(
-                                Manifest.permission.RECEIVE_SMS,
-                                Manifest.permission.READ_SMS
-                            )
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                perms.add(Manifest.permission.POST_NOTIFICATIONS)
-                            }
-                            permissionLauncher.launch(perms.toTypedArray())
-                        }
+        if (uiState.selectedTab == 0) {
+            // TAB 0: LEDGER & REVIEW SCREEN
+            LedgerScreen(
+                uiState = uiState,
+                hasSmsPermissions = hasSmsPermissions,
+                viewModel = viewModel,
+                onRequestPermissions = {
+                    val perms = mutableListOf(
+                        Manifest.permission.RECEIVE_SMS,
+                        Manifest.permission.READ_SMS
                     )
-                }
-            }
-
-            // Financial Summary Card
-            item {
-                FinancialSummaryCard(
-                    totalBalance = uiState.totalBalance,
-                    totalIncome = uiState.totalIncome,
-                    totalExpense = uiState.totalExpense,
-                    isSyncing = uiState.isSyncing,
-                    onSyncClick = {
-                        if (hasSmsPermissions) {
-                            viewModel.syncHistoricalSms()
-                        } else {
-                            permissionLauncher.launch(arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS))
-                        }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        perms.add(Manifest.permission.POST_NOTIFICATIONS)
                     }
-                )
-            }
-
-            // Search Bar
-            item {
-                SearchBarView(
-                    query = uiState.searchQuery,
-                    onQueryChange = { viewModel.setSearchQuery(it) }
-                )
-            }
-
-            // Filter Tabs (All, Needs Note, Expenses, Income)
-            item {
-                FilterBar(
-                    activeFilter = uiState.activeFilter,
-                    unreviewedCount = uiState.unreviewedCount,
-                    onFilterSelected = { viewModel.setFilter(it) }
-                )
-            }
-
-            // Section Header
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = when (uiState.activeFilter) {
-                            TransactionFilter.ALL -> "All Transactions"
-                            TransactionFilter.UNREVIEWED -> "Pending Review"
-                            TransactionFilter.EXPENSES -> "Expenses"
-                            TransactionFilter.INCOME -> "Income"
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-
-                    Text(
-                        text = "${uiState.transactions.size} records",
-                        fontSize = 12.sp,
-                        color = Color(0xFF94A3B8)
-                    )
-                }
-            }
-
-            // Empty State
-            if (uiState.transactions.isEmpty()) {
-                item {
-                    EmptyTransactionsView(
-                        filter = uiState.activeFilter,
-                        hasPermissions = hasSmsPermissions,
-                        onScanClick = {
-                            if (hasSmsPermissions) viewModel.syncHistoricalSms()
-                            else permissionLauncher.launch(arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS))
-                        }
-                    )
-                }
-            } else {
-                // Transaction List
-                items(
-                    items = uiState.transactions,
-                    key = { it.id }
-                ) { transaction ->
-                    TransactionItemCard(
-                        transaction = transaction,
-                        onClick = { viewModel.openEdit(transaction) }
-                    )
-                }
-            }
+                    permissionLauncher.launch(perms.toTypedArray())
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            )
+        } else {
+            // TAB 1: ANALYTICS & INTELLIGENCE SCREEN
+            AnalyticsScreen(
+                uiState = uiState,
+                onExportCsv = { viewModel.exportTransactionsCsv(context) },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            )
         }
     }
 
@@ -268,14 +209,281 @@ fun MainScreen(viewModel: TransactionListViewModel) {
             }
         )
     }
+}
 
-    // Modal BottomSheet for Analytics & Category Breakdown
-    if (uiState.showAnalytics) {
-        AnalyticsBottomSheet(
-            transactions = uiState.rawAllTransactions,
-            onDismiss = { viewModel.setAnalyticsVisible(false) },
-            onExportCsv = { viewModel.exportTransactionsCsv(context) }
-        )
+@Composable
+fun LedgerScreen(
+    uiState: DashboardUiState,
+    hasSmsPermissions: Boolean,
+    viewModel: TransactionListViewModel,
+    onRequestPermissions: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(bottom = 24.dp)
+    ) {
+        if (!hasSmsPermissions) {
+            item {
+                PermissionBanner(onRequestPermissions = onRequestPermissions)
+            }
+        }
+
+        // Financial Summary Card
+        item {
+            FinancialSummaryCard(
+                totalBalance = uiState.totalBalance,
+                totalIncome = uiState.totalIncome,
+                totalExpense = uiState.totalExpense,
+                isSyncing = uiState.isSyncing,
+                onSyncClick = {
+                    if (hasSmsPermissions) viewModel.syncHistoricalSms()
+                    else onRequestPermissions()
+                }
+            )
+        }
+
+        // Timeframe Selector: Today | This Week | This Month | All Time
+        item {
+            TimeframeSelector(
+                activeTimeframe = uiState.activeTimeframe,
+                onTimeframeSelected = { viewModel.setTimeframe(it) }
+            )
+        }
+
+        // Category Spending Carousel (Tap-to-filter)
+        if (uiState.categoryBreakdown.isNotEmpty()) {
+            item {
+                CategorySpendingCarousel(
+                    categories = uiState.categoryBreakdown,
+                    selectedCategory = uiState.selectedCategoryFilter,
+                    onCategoryClick = { viewModel.toggleCategoryFilter(it) }
+                )
+            }
+        }
+
+        // Search Bar View
+        item {
+            SearchBarView(
+                query = uiState.searchQuery,
+                onQueryChange = { viewModel.setSearchQuery(it) }
+            )
+        }
+
+        // Filter Bar (All, Needs Note (X), Expenses, Income)
+        item {
+            FilterBar(
+                activeFilter = uiState.activeFilter,
+                unreviewedCount = uiState.unreviewedCount,
+                onFilterSelected = { viewModel.setFilter(it) }
+            )
+        }
+
+        // Stream Header
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = when (uiState.activeFilter) {
+                        TransactionFilter.ALL -> "Transaction Stream"
+                        TransactionFilter.UNREVIEWED -> "Pending Review"
+                        TransactionFilter.EXPENSES -> "Expenses"
+                        TransactionFilter.INCOME -> "Income"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+
+                Text(
+                    text = "${uiState.transactions.size} records",
+                    fontSize = 12.sp,
+                    color = Color(0xFF94A3B8)
+                )
+            }
+        }
+
+        // Empty State or Date-Grouped Transaction Stream
+        if (uiState.transactions.isEmpty()) {
+            item {
+                EmptyTransactionsView(
+                    filter = uiState.activeFilter,
+                    hasPermissions = hasSmsPermissions,
+                    onScanClick = {
+                        if (hasSmsPermissions) viewModel.syncHistoricalSms()
+                        else onRequestPermissions()
+                    }
+                )
+            }
+        } else {
+            // Render Date-Grouped Stream
+            uiState.groupedTransactions.forEach { group ->
+                item(key = "header_${group.dayEpoch}") {
+                    DateGroupHeader(
+                        dateLabel = group.dateLabel,
+                        dailySpent = group.dailySpent,
+                        dailyIncome = group.dailyIncome
+                    )
+                }
+
+                items(
+                    items = group.transactions,
+                    key = { it.id }
+                ) { transaction ->
+                    TransactionItemCard(
+                        transaction = transaction,
+                        onClick = { viewModel.openEdit(transaction) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AnalyticsScreen(
+    uiState: DashboardUiState,
+    onExportCsv: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp)
+    ) {
+        // 7-Day Canvas Spending Bar Chart
+        item {
+            WeeklySpendingBarChart(bars = uiState.weeklyChartBars)
+        }
+
+        // Smart Spending Insights Card
+        uiState.insights?.let { insights ->
+            item {
+                SpendingInsightsCard(insights = insights)
+            }
+        }
+
+        // Category Spending Detailed Breakdown
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Category Distribution",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+
+                        Text(
+                            text = uiState.activeTimeframe.displayName,
+                            fontSize = 11.sp,
+                            color = Color(0xFF94A3B8)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    if (uiState.categoryBreakdown.isEmpty()) {
+                        Text(
+                            text = "No expenses recorded in ${uiState.activeTimeframe.displayName.lowercase()} yet.",
+                            fontSize = 13.sp,
+                            color = Color(0xFF94A3B8)
+                        )
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            uiState.categoryBreakdown.forEach { item ->
+                                Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = item.category,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color.White
+                                        )
+
+                                        Text(
+                                            text = "${FormatUtils.formatAmount(item.totalAmount)} ETB (${(item.percentage * 100).toInt()}%)",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFCBD5E1)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    LinearProgressIndicator(
+                                        progress = { item.percentage },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(6.dp)
+                                            .clip(RoundedCornerShape(3.dp)),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        trackColor = Color(0xFF334155)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Export Data Card
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Export Transaction Ledger",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "Save as .csv spreadsheet for Excel or Google Sheets",
+                            fontSize = 12.sp,
+                            color = Color(0xFF94A3B8)
+                        )
+                    }
+
+                    Button(
+                        onClick = onExportCsv,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Export", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -287,7 +495,7 @@ fun SearchBarView(
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
-        placeholder = { Text("Search by bank, description, or ref #", color = Color(0xFF64748B), fontSize = 13.sp) },
+        placeholder = { Text("Search by bank, note, or ref #", color = Color(0xFF64748B), fontSize = 13.sp) },
         leadingIcon = {
             Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(20.dp))
         },
@@ -406,7 +614,7 @@ fun EmptyTransactionsView(
                 text = if (filter == TransactionFilter.UNREVIEWED) {
                     "All your transactions have descriptions and categories."
                 } else {
-                    "Tap 'Scan Past SMS' to import existing banking messages from your inbox, or wait for incoming bank alerts."
+                    "Tap 'Scan SMS' to import existing banking messages from your inbox, or wait for incoming bank alerts."
                 },
                 color = Color(0xFF94A3B8),
                 fontSize = 13.sp,
