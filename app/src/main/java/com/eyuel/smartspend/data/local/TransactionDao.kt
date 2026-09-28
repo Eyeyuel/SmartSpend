@@ -48,6 +48,9 @@ interface TransactionDao {
     @Query("DELETE FROM transactions")
     suspend fun deleteAll()
 
+    @Query("SELECT referenceId FROM transactions WHERE referenceId IS NOT NULL")
+    suspend fun getAllReferenceIds(): List<String>
+
     @Query("SELECT EXISTS(SELECT 1 FROM transactions WHERE referenceId = :referenceId LIMIT 1)")
     suspend fun hasTransactionWithReference(referenceId: String): Boolean
 

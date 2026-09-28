@@ -96,7 +96,7 @@ fun FinancialSummaryCard(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "${String.format(Locale.US, "%,.2f", totalBalance)} ETB",
+                    text = "${com.eyuel.smartspend.ui.FormatUtils.formatAmount(totalBalance)} ETB",
                     fontSize = 30.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White
@@ -128,7 +128,7 @@ fun FinancialSummaryCard(
                         Column {
                             Text("Income", fontSize = 12.sp, color = Color(0xFF94A3B8))
                             Text(
-                                text = "+${String.format(Locale.US, "%,.2f", totalIncome)}",
+                                text = "+${com.eyuel.smartspend.ui.FormatUtils.formatAmount(totalIncome)}",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = IncomeGreen
@@ -156,7 +156,7 @@ fun FinancialSummaryCard(
                         Column {
                             Text("Spent", fontSize = 12.sp, color = Color(0xFF94A3B8))
                             Text(
-                                text = "-${String.format(Locale.US, "%,.2f", totalExpense)}",
+                                text = "-${com.eyuel.smartspend.ui.FormatUtils.formatAmount(totalExpense)}",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = ExpenseRed

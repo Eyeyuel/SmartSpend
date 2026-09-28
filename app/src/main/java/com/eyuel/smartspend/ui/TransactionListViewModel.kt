@@ -66,37 +66,50 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
 
     val uiState: StateFlow<DashboardUiState> = combine(
         repository.getAllTransactions(),
-        repository.getTotalIncome(),
-        repository.getTotalExpenses(),
-        repository.getUnreviewedCount(),
         _uiControls
-    ) { allTx, income, expense, unreviewedCount, controls ->
-        val filtered = allTx.filter { item ->
+    ) { allTx, controls ->
+        var totalIncome = 0.0
+        var totalExpense = 0.0
+        var unreviewedCount = 0
+
+        val filtered = ArrayList<TransactionEntity>(allTx.size)
+        val query = controls.query.trim()
+        val hasQuery = query.isNotEmpty()
+
+        for (item in allTx) {
+            if (item.type == TransactionType.CREDIT) {
+                totalIncome += item.amount
+            } else {
+                totalExpense += item.amount
+            }
+            if (!item.isReviewed) {
+                unreviewedCount++
+            }
+
             val matchesFilter = when (controls.filter) {
                 TransactionFilter.ALL -> true
                 TransactionFilter.UNREVIEWED -> !item.isReviewed
                 TransactionFilter.EXPENSES -> item.type == TransactionType.DEBIT
                 TransactionFilter.INCOME -> item.type == TransactionType.CREDIT
             }
-            val matchesSearch = controls.query.isBlank() ||
-                    item.bankName.contains(controls.query, ignoreCase = true) ||
-                    item.description.contains(controls.query, ignoreCase = true) ||
-                    item.category.contains(controls.query, ignoreCase = true) ||
-                    (item.referenceId?.contains(controls.query, ignoreCase = true) == true) ||
-                    item.rawBody.contains(controls.query, ignoreCase = true)
 
-            matchesFilter && matchesSearch
+            val matchesSearch = !hasQuery ||
+                    item.bankName.contains(query, ignoreCase = true) ||
+                    item.description.contains(query, ignoreCase = true) ||
+                    item.category.contains(query, ignoreCase = true) ||
+                    (item.referenceId?.contains(query, ignoreCase = true) == true)
+
+            if (matchesFilter && matchesSearch) {
+                filtered.add(item)
+            }
         }
-
-        val inc = income ?: 0.0
-        val exp = expense ?: 0.0
 
         DashboardUiState(
             transactions = filtered,
             rawAllTransactions = allTx,
-            totalIncome = inc,
-            totalExpense = exp,
-            totalBalance = inc - exp,
+            totalIncome = totalIncome,
+            totalExpense = totalExpense,
+            totalBalance = totalIncome - totalExpense,
             unreviewedCount = unreviewedCount,
             activeFilter = controls.filter,
             searchQuery = controls.query,

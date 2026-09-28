@@ -35,8 +35,10 @@ fun TransactionItemCard(
 ) {
     val isIncome = transaction.type == TransactionType.CREDIT
     val formattedDate = remember(transaction.timestamp) {
-        val sdf = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
-        sdf.format(Date(transaction.timestamp))
+        com.eyuel.smartspend.ui.FormatUtils.formatShortDate(transaction.timestamp)
+    }
+    val formattedAmount = remember(transaction.amount, isIncome, transaction.currency) {
+        "${if (isIncome) "+" else "-"}${com.eyuel.smartspend.ui.FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}"
     }
 
     Card(
@@ -112,7 +114,7 @@ fun TransactionItemCard(
 
                 // Amount
                 Text(
-                    text = "${if (isIncome) "+" else "-"}${String.format(Locale.US, "%,.2f", transaction.amount)} ${transaction.currency}",
+                    text = formattedAmount,
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
                     color = if (isIncome) IncomeGreen else ExpenseRed

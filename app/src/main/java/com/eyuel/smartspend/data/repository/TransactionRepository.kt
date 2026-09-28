@@ -73,13 +73,48 @@ class TransactionRepositoryImpl(
     }
 
     override suspend fun saveParsedTransactions(parsedList: List<ParsedTransaction>): Int {
-        var count = 0
-        for (item in parsedList) {
-            if (saveParsedTransaction(item)) {
-                count++
+        if (parsedList.isEmpty()) return 0
+
+        // 1. Fetch existing reference IDs in a single query
+        val existingRefs = transactionDao.getAllReferenceIds().toHashSet()
+
+        // 2. Filter duplicates in-memory
+        val toInsert = mutableListOf<TransactionEntity>()
+        val seenRefsInBatch = mutableSetOf<String>()
+
+        for (parsed in parsedList) {
+            val ref = parsed.referenceId
+            if (ref != null && (existingRefs.contains(ref) || seenRefsInBatch.contains(ref))) {
+                continue // Already recorded
             }
+            if (ref != null) {
+                seenRefsInBatch.add(ref)
+            }
+
+            toInsert.add(
+                TransactionEntity(
+                    referenceId = parsed.referenceId,
+                    bankName = parsed.bankName,
+                    senderAddress = parsed.senderAddress,
+                    amount = parsed.amount,
+                    currency = parsed.currency,
+                    type = parsed.type,
+                    timestamp = parsed.timestamp,
+                    balanceAfter = parsed.balanceAfter,
+                    accountNumber = parsed.accountNumber,
+                    rawBody = parsed.rawBody,
+                    description = "",
+                    category = "Uncategorized",
+                    isReviewed = false
+                )
+            )
         }
-        return count
+
+        if (toInsert.isEmpty()) return 0
+
+        // 3. Single atomic batch write to SQLite
+        val rowIds = transactionDao.insertAllOrIgnore(toInsert)
+        return rowIds.count { it > 0 }
     }
 
     override suspend fun updateNoteAndCategory(id: Long, description: String, category: String) {
