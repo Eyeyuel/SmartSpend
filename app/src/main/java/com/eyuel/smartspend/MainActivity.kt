@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
@@ -36,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eyuel.smartspend.ui.DashboardUiState
 import com.eyuel.smartspend.ui.TransactionFilter
 import com.eyuel.smartspend.ui.TransactionListViewModel
+import com.eyuel.smartspend.ui.components.AnalyticsBottomSheet
 import com.eyuel.smartspend.ui.components.EditTransactionBottomSheet
 import com.eyuel.smartspend.ui.components.FilterBar
 import com.eyuel.smartspend.ui.components.FinancialSummaryCard
@@ -124,6 +126,15 @@ fun MainScreen(viewModel: TransactionListViewModel) {
                                 color = if (hasSmsPermissions) IncomeGreen else Color(0xFFF59E0B)
                             )
                         }
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.setAnalyticsVisible(true) }) {
+                        Icon(
+                            imageVector = Icons.Default.PieChart,
+                            contentDescription = "Spending Analytics",
+                            tint = Color.White
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -255,6 +266,15 @@ fun MainScreen(viewModel: TransactionListViewModel) {
             onDelete = { id ->
                 viewModel.deleteTransaction(id)
             }
+        )
+    }
+
+    // Modal BottomSheet for Analytics & Category Breakdown
+    if (uiState.showAnalytics) {
+        AnalyticsBottomSheet(
+            transactions = uiState.rawAllTransactions,
+            onDismiss = { viewModel.setAnalyticsVisible(false) },
+            onExportCsv = { viewModel.exportTransactionsCsv(context) }
         )
     }
 }

@@ -28,6 +28,17 @@
             </intent-filter>
         </activity>
 
+        <!-- FileProvider for secure CSV export sharing -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <!-- BroadcastReceiver for Real-Time Incoming Banking SMS -->
         <receiver
             android:name=".receiver.SmsReceiver"

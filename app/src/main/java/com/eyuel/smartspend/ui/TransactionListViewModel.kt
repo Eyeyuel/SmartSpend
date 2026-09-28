@@ -1,10 +1,12 @@
 package com.eyuel.smartspend.ui
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.eyuel.smartspend.SmartSpendApp
 import com.eyuel.smartspend.data.local.TransactionEntity
+import com.eyuel.smartspend.data.repository.CsvExportHelper
 import com.eyuel.smartspend.data.repository.SmsSyncManager
 import com.eyuel.smartspend.domain.model.TransactionType
 import kotlinx.coroutines.flow.*
@@ -19,6 +21,7 @@ enum class TransactionFilter {
 
 data class DashboardUiState(
     val transactions: List<TransactionEntity> = emptyList(),
+    val rawAllTransactions: List<TransactionEntity> = emptyList(),
     val totalIncome: Double = 0.0,
     val totalExpense: Double = 0.0,
     val totalBalance: Double = 0.0,
@@ -26,6 +29,7 @@ data class DashboardUiState(
     val activeFilter: TransactionFilter = TransactionFilter.ALL,
     val searchQuery: String = "",
     val editingTransaction: TransactionEntity? = null,
+    val showAnalytics: Boolean = false,
     val isSyncing: Boolean = false,
     val syncMessage: String? = null
 )
@@ -34,6 +38,7 @@ private data class UiControls(
     val filter: TransactionFilter,
     val query: String,
     val editing: TransactionEntity?,
+    val showAnalytics: Boolean,
     val syncing: Boolean,
     val syncMsg: String?
 )
@@ -46,17 +51,17 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
     private val _activeFilter = MutableStateFlow(TransactionFilter.ALL)
     private val _searchQuery = MutableStateFlow("")
     private val _editingTransaction = MutableStateFlow<TransactionEntity?>(null)
+    private val _showAnalytics = MutableStateFlow(false)
     private val _isSyncing = MutableStateFlow(false)
     private val _syncMessage = MutableStateFlow<String?>(null)
 
     private val _uiControls = combine(
-        _activeFilter,
-        _searchQuery,
-        _editingTransaction,
+        combine(_activeFilter, _searchQuery, _editingTransaction) { f, q, e -> Triple(f, q, e) },
+        _showAnalytics,
         _isSyncing,
         _syncMessage
-    ) { filter, query, editing, syncing, syncMsg ->
-        UiControls(filter, query, editing, syncing, syncMsg)
+    ) { (filter, query, editing), showAnalytics, syncing, syncMsg ->
+        UiControls(filter, query, editing, showAnalytics, syncing, syncMsg)
     }
 
     val uiState: StateFlow<DashboardUiState> = combine(
@@ -88,6 +93,7 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
 
         DashboardUiState(
             transactions = filtered,
+            rawAllTransactions = allTx,
             totalIncome = inc,
             totalExpense = exp,
             totalBalance = inc - exp,
@@ -95,6 +101,7 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             activeFilter = controls.filter,
             searchQuery = controls.query,
             editingTransaction = controls.editing,
+            showAnalytics = controls.showAnalytics,
             isSyncing = controls.syncing,
             syncMessage = controls.syncMsg
         )
@@ -118,6 +125,10 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
 
     fun closeEdit() {
         _editingTransaction.value = null
+    }
+
+    fun setAnalyticsVisible(visible: Boolean) {
+        _showAnalytics.value = visible
     }
 
     fun saveDescriptionAndCategory(id: Long, description: String, category: String) {
@@ -149,6 +160,18 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             } else {
                 "No banking SMS found or permission needed."
             }
+        }
+    }
+
+    fun exportTransactionsCsv(context: Context) {
+        val list = uiState.value.rawAllTransactions
+        if (list.isEmpty()) {
+            _syncMessage.value = "No transactions to export yet."
+            return
+        }
+        val success = CsvExportHelper.exportAndShareTransactions(context, list)
+        if (!success) {
+            _syncMessage.value = "Failed to export CSV report."
         }
     }
 
