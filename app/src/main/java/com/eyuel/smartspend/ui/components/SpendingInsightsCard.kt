@@ -26,6 +26,8 @@ import com.eyuel.smartspend.ui.FormatUtils
 import com.eyuel.smartspend.ui.model.SpendingInsights
 import com.eyuel.smartspend.ui.theme.ExpenseRed
 
+import androidx.compose.foundation.BorderStroke
+
 @Composable
 fun SpendingInsightsCard(
     insights: SpendingInsights,
@@ -34,7 +36,8 @@ fun SpendingInsightsCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF131C2E)),
+        border = BorderStroke(1.dp, Color(0xFF223048))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

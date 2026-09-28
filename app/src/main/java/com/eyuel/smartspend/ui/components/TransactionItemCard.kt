@@ -1,14 +1,12 @@
 package com.eyuel.smartspend.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -17,15 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eyuel.smartspend.data.local.TransactionEntity
 import com.eyuel.smartspend.domain.model.TransactionType
-import com.eyuel.smartspend.ui.theme.ExpenseRed
-import com.eyuel.smartspend.ui.theme.IncomeGreen
-import com.eyuel.smartspend.ui.theme.PendingOrange
-import java.text.SimpleDateFormat
-import java.util.*
+import com.eyuel.smartspend.ui.CategoryVisuals
+import com.eyuel.smartspend.ui.FormatUtils
 
 @Composable
 fun TransactionItemCard(
@@ -34,143 +30,141 @@ fun TransactionItemCard(
     modifier: Modifier = Modifier
 ) {
     val isIncome = transaction.type == TransactionType.CREDIT
+    val categoryStyle = remember(transaction.category) {
+        CategoryVisuals.getStyle(transaction.category)
+    }
+    val bankVisual = remember(transaction.bankName) {
+        CategoryVisuals.getBankVisual(transaction.bankName)
+    }
     val formattedDate = remember(transaction.timestamp) {
-        com.eyuel.smartspend.ui.FormatUtils.formatShortDate(transaction.timestamp)
+        FormatUtils.formatShortDate(transaction.timestamp)
     }
     val formattedAmount = remember(transaction.amount, isIncome, transaction.currency) {
-        "${if (isIncome) "+" else "-"}${com.eyuel.smartspend.ui.FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}"
+        "${if (isIncome) "+" else "-"}${FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}"
     }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(14.dp))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E293B)
-        )
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF131B2A)),
+        border = BorderStroke(1.dp, Color(0xFF1E2A3F))
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Row 1: Bank badge, unreviewed dot, and Amount
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            // Category Icon Badge with indicator
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(11.dp))
+                    .background(categoryStyle.containerColor)
+                    .border(1.dp, categoryStyle.color.copy(alpha = 0.25f), RoundedCornerShape(11.dp)),
+                contentAlignment = Alignment.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Type Icon
+                Icon(
+                    imageVector = categoryStyle.icon,
+                    contentDescription = transaction.category,
+                    tint = categoryStyle.color,
+                    modifier = Modifier.size(20.dp)
+                )
+
+                // Unreviewed amber indicator dot
+                if (!transaction.isReviewed) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .align(Alignment.TopEnd)
+                            .padding(3.dp)
+                            .size(7.dp)
                             .clip(CircleShape)
-                            .background(
-                                if (isIncome) IncomeGreen.copy(alpha = 0.15f)
-                                else ExpenseRed.copy(alpha = 0.15f)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (isIncome) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
-                            contentDescription = null,
-                            tint = if (isIncome) IncomeGreen else ExpenseRed,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = transaction.bankName,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-
-                            if (!transaction.isReviewed) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(PendingOrange)
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = formattedDate,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF94A3B8)
-                        )
-                    }
+                            .background(Color(0xFFF59E0B))
+                    )
                 }
-
-                // Amount
-                Text(
-                    text = formattedAmount,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = if (isIncome) IncomeGreen else ExpenseRed
-                )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-            // Row 2: User description / prompt and Category Chip
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            // Center details: Title & Subtitle
+            Column(modifier = Modifier.weight(1f)) {
                 if (transaction.description.isNotBlank()) {
                     Text(
                         text = transaction.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFFE2E8F0),
-                        modifier = Modifier.weight(1f, fill = false)
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "${bankVisual.shortName} • $formattedDate",
+                        fontSize = 12.sp,
+                        color = Color(0xFF94A3B8),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 } else {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f, fill = false)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = null,
-                            tint = PendingOrange,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Tap to add description...",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = PendingOrange
+                            text = bankVisual.shortName,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "${transaction.category} • $formattedDate",
+                        fontSize = 12.sp,
+                        color = Color(0xFF94A3B8),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
+            }
 
-                Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
-                // Category Tag
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFF334155).copy(alpha = 0.6f)
-                ) {
+            // Right column: Amount and status
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = formattedAmount,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = if (isIncome) Color(0xFF34D399) else Color(0xFFFB7185)
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                if (!transaction.isReviewed) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color(0xFF451A03).copy(alpha = 0.7f)
+                    ) {
+                        Text(
+                            text = "Needs note",
+                            color = Color(0xFFFBBF24),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                        )
+                    }
+                } else if (transaction.description.isNotBlank()) {
                     Text(
                         text = transaction.category,
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF94A3B8),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        color = Color(0xFF64748B),
+                        maxLines = 1
                     )
                 }
             }

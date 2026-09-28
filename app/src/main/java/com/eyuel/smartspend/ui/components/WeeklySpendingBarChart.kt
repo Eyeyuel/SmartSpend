@@ -42,7 +42,8 @@ fun WeeklySpendingBarChart(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF131C2E)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF223048))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(

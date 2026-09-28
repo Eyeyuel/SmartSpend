@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -99,6 +100,7 @@ fun MainScreen(viewModel: TransactionListViewModel) {
     }
 
     Scaffold(
+        containerColor = Color(0xFF0B0F17),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -113,36 +115,37 @@ fun MainScreen(viewModel: TransactionListViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
+                                    .size(7.dp)
                                     .clip(CircleShape)
-                                    .background(if (hasSmsPermissions) IncomeGreen else Color(0xFFF59E0B))
+                                    .background(if (hasSmsPermissions) Color(0xFF10B981) else Color(0xFFF59E0B))
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = if (hasSmsPermissions) "SMS Tracking Active" else "Permissions Required",
-                                fontSize = 12.sp,
-                                color = if (hasSmsPermissions) IncomeGreen else Color(0xFFF59E0B)
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = if (hasSmsPermissions) Color(0xFF34D399) else Color(0xFFFBBF24)
                             )
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0B0F17))
             )
         },
         bottomBar = {
             NavigationBar(
-                containerColor = Color(0xFF0F172A),
-                tonalElevation = 8.dp
+                containerColor = Color(0xFF0E1524),
+                tonalElevation = 0.dp
             ) {
                 NavigationBarItem(
                     selected = uiState.selectedTab == 0,
                     onClick = { viewModel.setSelectedTab(0) },
                     icon = { Icon(Icons.Default.ReceiptLong, contentDescription = "Ledger") },
-                    label = { Text("Ledger", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("Ledger", fontWeight = FontWeight.SemiBold, fontSize = 12.sp) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color.White,
                         selectedTextColor = Color.White,
-                        indicatorColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = Color(0xFF25344D),
                         unselectedIconColor = Color(0xFF64748B),
                         unselectedTextColor = Color(0xFF64748B)
                     )
@@ -152,11 +155,11 @@ fun MainScreen(viewModel: TransactionListViewModel) {
                     selected = uiState.selectedTab == 1,
                     onClick = { viewModel.setSelectedTab(1) },
                     icon = { Icon(Icons.Default.Insights, contentDescription = "Analytics") },
-                    label = { Text("Insights", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("Insights", fontWeight = FontWeight.SemiBold, fontSize = 12.sp) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color.White,
                         selectedTextColor = Color.White,
-                        indicatorColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = Color(0xFF25344D),
                         unselectedIconColor = Color(0xFF64748B),
                         unselectedTextColor = Color(0xFF64748B)
                     )
@@ -221,7 +224,7 @@ fun LedgerScreen(
 ) {
     LazyColumn(
         modifier = modifier.padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         if (!hasSmsPermissions) {
@@ -283,7 +286,9 @@ fun LedgerScreen(
         // Stream Header
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp, bottom = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -294,7 +299,7 @@ fun LedgerScreen(
                         TransactionFilter.EXPENSES -> "Expenses"
                         TransactionFilter.INCOME -> "Income"
                     },
-                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
@@ -302,7 +307,8 @@ fun LedgerScreen(
                 Text(
                     text = "${uiState.transactions.size} records",
                     fontSize = 12.sp,
-                    color = Color(0xFF94A3B8)
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF64748B)
                 )
             }
         }
@@ -372,7 +378,8 @@ fun AnalyticsScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF131C2E)),
+                border = BorderStroke(1.dp, Color(0xFF223048))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
@@ -405,18 +412,36 @@ fun AnalyticsScreen(
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             uiState.categoryBreakdown.forEach { item ->
+                                val style = com.eyuel.smartspend.ui.CategoryVisuals.getStyle(item.category)
                                 Column {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(
-                                            text = item.category,
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = Color.White
-                                        )
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .background(style.containerColor),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = style.icon,
+                                                    contentDescription = item.category,
+                                                    tint = style.color,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = item.category,
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = Color.White
+                                            )
+                                        }
 
                                         Text(
                                             text = "${FormatUtils.formatAmount(item.totalAmount)} ETB (${(item.percentage * 100).toInt()}%)",
@@ -432,10 +457,10 @@ fun AnalyticsScreen(
                                         progress = { item.percentage },
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(6.dp)
+                                            .height(5.dp)
                                             .clip(RoundedCornerShape(3.dp)),
-                                        color = MaterialTheme.colorScheme.primary,
-                                        trackColor = Color(0xFF334155)
+                                        color = style.color,
+                                        trackColor = Color(0xFF1E293B)
                                     )
                                 }
                             }
@@ -450,7 +475,8 @@ fun AnalyticsScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF131C2E)),
+                border = BorderStroke(1.dp, Color(0xFF223048))
             ) {
                 Row(
                     modifier = Modifier
@@ -492,32 +518,38 @@ fun SearchBarView(
     query: String,
     onQueryChange: (String) -> Unit
 ) {
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        placeholder = { Text("Search by bank, note, or ref #", color = Color(0xFF64748B), fontSize = 13.sp) },
-        leadingIcon = {
-            Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(20.dp))
-        },
-        trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color(0xFF94A3B8), modifier = Modifier.size(18.dp))
-                }
-            }
-        },
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = Color(0xFF334155),
-            focusedContainerColor = Color(0xFF1E293B),
-            unfocusedContainerColor = Color(0xFF1E293B)
-        ),
-        singleLine = true
-    )
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFF131B2A),
+        border = BorderStroke(1.dp, Color(0xFF1E2A3F))
+    ) {
+        TextField(
+            value = query,
+            onValueChange = onQueryChange,
+            placeholder = { Text("Search by bank, note, or ref #", color = Color(0xFF64748B), fontSize = 13.sp) },
+            leadingIcon = {
+                Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(18.dp))
+            },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color(0xFF94A3B8), modifier = Modifier.size(16.dp))
+                    }
+                }
+            },
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            ),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 }
 
 @Composable

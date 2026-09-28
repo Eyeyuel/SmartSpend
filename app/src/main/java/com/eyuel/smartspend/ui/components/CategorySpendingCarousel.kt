@@ -1,5 +1,6 @@
 package com.eyuel.smartspend.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,7 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,21 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.eyuel.smartspend.ui.CategoryVisuals
 import com.eyuel.smartspend.ui.FormatUtils
 import com.eyuel.smartspend.ui.model.CategorySpendingItem
-
-private val CategoryCardColors = listOf(
-    Color(0xFF6366F1), // Indigo
-    Color(0xFF10B981), // Emerald
-    Color(0xFFF59E0B), // Amber
-    Color(0xFFEC4899), // Pink
-    Color(0xFF3B82F6), // Blue
-    Color(0xFF8B5CF6), // Purple
-    Color(0xFF14B8A6), // Teal
-    Color(0xFFF97316)  // Orange
-)
 
 @Composable
 fun CategorySpendingCarousel(
@@ -56,27 +48,30 @@ fun CategorySpendingCarousel(
             )
 
             if (selectedCategory != null) {
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-                        .clickable { onCategoryClick(selectedCategory) }
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                    modifier = Modifier.clickable { onCategoryClick(selectedCategory) }
                 ) {
-                    Text(
-                        text = "Filtered: $selectedCategory",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Icons.Default.Clear,
-                        contentDescription = "Clear filter",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(12.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Filter: $selectedCategory",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Clear filter",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
                 }
             }
         }
@@ -91,24 +86,27 @@ fun CategorySpendingCarousel(
         ) {
             categories.forEach { item ->
                 val isSelected = item.category == selectedCategory
-                val colorIndex = Math.abs(item.category.hashCode()) % CategoryCardColors.size
-                val accentColor = CategoryCardColors[colorIndex]
+                val style = CategoryVisuals.getStyle(item.category)
 
                 Card(
                     modifier = Modifier
-                        .width(145.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .then(
-                            if (isSelected) Modifier.border(2.dp, accentColor, RoundedCornerShape(16.dp))
-                            else Modifier
-                        )
+                        .width(136.dp)
+                        .clip(RoundedCornerShape(14.dp))
                         .clickable { onCategoryClick(item.category) },
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) Color(0xFF26334D) else Color(0xFF1E293B)
+                        containerColor = if (isSelected) style.containerColor.copy(alpha = 0.9f) else Color(0xFF131B2A)
+                    ),
+                    border = BorderStroke(
+                        width = if (isSelected) 1.5.dp else 1.dp,
+                        color = if (isSelected) style.color else Color(0xFF1E2A3F)
                     )
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Column(
+                        modifier = Modifier.padding(10.dp),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Top row: Category icon avatar + percentage pill
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -116,47 +114,69 @@ fun CategorySpendingCarousel(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(accentColor)
-                            )
-                            Text(
-                                text = "${(item.percentage * 100).toInt()}%",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = accentColor
-                            )
+                                    .size(28.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(style.containerColor)
+                                    .border(1.dp, style.color.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = style.icon,
+                                    contentDescription = item.category,
+                                    tint = style.color,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = style.color.copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    text = "${(item.percentage * 100).toInt()}%",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = style.color,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                )
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
+                        // Category Title
                         Text(
                             text = item.category,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White,
-                            maxLines = 1
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
 
                         Spacer(modifier = Modifier.height(2.dp))
 
+                        // Amount Spent
                         Text(
                             text = "${FormatUtils.formatAmount(item.totalAmount)} ETB",
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFCBD5E1)
+                            color = Color(0xFFE2E8F0),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
+                        // Progress Bar
                         LinearProgressIndicator(
                             progress = { item.percentage },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(4.dp)
+                                .height(3.dp)
                                 .clip(RoundedCornerShape(2.dp)),
-                            color = accentColor,
-                            trackColor = Color(0xFF334155)
+                            color = style.color,
+                            trackColor = Color(0xFF1E293B)
                         )
                     }
                 }
