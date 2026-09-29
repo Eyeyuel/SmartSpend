@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,9 +51,10 @@ fun EditTransactionBottomSheet(
         CategoryVisuals.getBankVisual(transaction.bankName)
     }
 
-    // Requested ordering: Transportation first, Food & Dining second
-    val orderedCategories = remember {
-        listOf(
+    // Bring the suggested / selected category to the front (index 0),
+    // followed by Transportation, Food & Dining, and other common categories.
+    val orderedCategories = remember(transaction.category) {
+        val baseOrder = listOf(
             ExpenseCategory.TRANSPORTATION,
             ExpenseCategory.FOOD_DINING,
             ExpenseCategory.GROCERIES,
@@ -65,6 +68,12 @@ fun EditTransactionBottomSheet(
             ExpenseCategory.OTHER,
             ExpenseCategory.UNCATEGORIZED
         )
+        val initialCategory = transaction.category
+        if (initialCategory.isNotBlank() && initialCategory != ExpenseCategory.UNCATEGORIZED) {
+            listOf(initialCategory) + baseOrder.filter { it != initialCategory }
+        } else {
+            baseOrder
+        }
     }
 
     ModalBottomSheet(
@@ -217,6 +226,15 @@ fun EditTransactionBottomSheet(
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                     color = if (isSelected) Color.White else Color(0xFFCBD5E1)
                                 )
+                                if (isSelected) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = style.color,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                }
                             }
                         }
                     }
