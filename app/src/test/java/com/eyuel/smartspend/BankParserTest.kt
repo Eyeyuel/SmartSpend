@@ -389,6 +389,37 @@ class BankParserTest {
     }
 
     @Test
+    fun testDashenBankTransferDebit() {
+        val sms = "Dear Eyuel, your account 1029****4812 has been debited with ETB 500.00 on 28/09/2026 for transfer to Abebe Kebede. Current Balance is ETB 4,200.00. Txn ID: DSH98410294. Thank you for banking with Dashen Bank."
+        val result = registry.parse("Dashen", sms)
+
+        assertNotNull(result)
+        assertEquals("Dashen Bank", result?.bankName)
+        assertEquals(TransactionType.DEBIT, result?.type)
+        assertEquals(500.0, result?.amount ?: 0.0, 0.001)
+        assertEquals(4200.0, result?.balanceAfter ?: 0.0, 0.001)
+        assertEquals("DSH98410294", result?.referenceId)
+        assertEquals("Abebe Kebede", result?.counterparty)
+        assertEquals("1029****4812", result?.accountNumber)
+        assertEquals(com.eyuel.smartspend.domain.model.ExpenseCategory.TRANSFER, result?.suggestedCategory)
+    }
+
+    @Test
+    fun testDashenAmoleMerchantPayment() {
+        val sms = "Dear Customer, you have paid ETB 250.00 to Kaldis Coffee using Amole. Bal: ETB 1,200.00. Ref: AM20481920. Dashen Bank."
+        val result = registry.parse("Amole", sms)
+
+        assertNotNull(result)
+        assertEquals("Dashen Bank", result?.bankName)
+        assertEquals(TransactionType.DEBIT, result?.type)
+        assertEquals(250.0, result?.amount ?: 0.0, 0.001)
+        assertEquals(1200.0, result?.balanceAfter ?: 0.0, 0.001)
+        assertEquals("AM20481920", result?.referenceId)
+        assertEquals("Kaldis Coffee", result?.counterparty)
+        assertEquals(com.eyuel.smartspend.domain.model.ExpenseCategory.FOOD_DINING, result?.suggestedCategory)
+    }
+
+    @Test
     fun testAwashGenericParsing() {
         val sms = "Dear Customer, your account 013****123 is debited by ETB 600.00 on 24/09/2026. Bal: ETB 8,200.00. Ref: AW2910482. Awash Bank."
         val result = registry.parse("AwashBank", sms)
