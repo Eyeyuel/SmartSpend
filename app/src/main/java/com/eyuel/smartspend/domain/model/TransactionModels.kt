@@ -61,5 +61,7 @@ data class ParsedTransaction(
     val timestamp: Long,
     val balanceAfter: Double? = null,
     val accountNumber: String? = null,
-    val rawBody: String
+    val rawBody: String,
+    val counterparty: String? = null,
+    val suggestedCategory: String? = null
 )

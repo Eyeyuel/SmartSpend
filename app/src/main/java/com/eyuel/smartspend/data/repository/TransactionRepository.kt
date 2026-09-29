@@ -72,8 +72,8 @@ class TransactionRepositoryImpl(
             balanceAfter = parsed.balanceAfter,
             accountNumber = parsed.accountNumber,
             rawBody = parsed.rawBody,
-            description = "",
-            category = "Uncategorized",
+            description = parsed.counterparty ?: "",
+            category = parsed.suggestedCategory ?: "Uncategorized",
             isReviewed = false
         )
         val rowId = transactionDao.insertOrIgnore(entity)
@@ -115,8 +115,8 @@ class TransactionRepositoryImpl(
                     balanceAfter = parsed.balanceAfter,
                     accountNumber = parsed.accountNumber,
                     rawBody = parsed.rawBody,
-                    description = "",
-                    category = "Uncategorized",
+                    description = parsed.counterparty ?: "",
+                    category = parsed.suggestedCategory ?: "Uncategorized",
                     isReviewed = false
                 )
             )
