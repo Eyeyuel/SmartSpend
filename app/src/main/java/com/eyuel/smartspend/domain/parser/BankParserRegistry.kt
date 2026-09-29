@@ -6,6 +6,7 @@ class BankParserRegistry(
     private val parsers: List<BankParser> = listOf(
         CbeParser(),
         TelebirrParser(),
+        NibParser(),
         AbyssiniaParser(),
         GenericBankParser()
     )

@@ -298,6 +298,42 @@ class BankParserTest {
     }
 
     @Test
+    fun testNibDebitToTelebirr() {
+        val sms = """
+            Dear Customer your Account ****7659 has been Debited with ETB -1,001.04 On 29 SEP 2026 to telebirr account number  with service charge ETB0.87, disaster commission(5%) ETB0.04 and VAT(15%) ETB0.13 on service charge Ref: FT26272JNYFB. Your Current Balance is ETB 23,047.92. For further Info call 9698. Join our social medias using the following link https://www.nibbanksc.com/SocialMedia/. Thank you for Banking with NIB!
+        """.trimIndent()
+        val result = registry.parse("NIB", sms)
+
+        assertNotNull(result)
+        assertEquals("Nib International Bank", result?.bankName)
+        assertEquals(TransactionType.DEBIT, result?.type)
+        assertEquals(1001.04, result?.amount ?: 0.0, 0.001)
+        assertEquals(23047.92, result?.balanceAfter ?: 0.0, 0.001)
+        assertEquals("FT26272JNYFB", result?.referenceId)
+        assertEquals("Telebirr Transfer", result?.counterparty)
+        assertEquals("****7659", result?.accountNumber)
+        assertEquals(com.eyuel.smartspend.domain.model.ExpenseCategory.TRANSFER, result?.suggestedCategory)
+    }
+
+    @Test
+    fun testNibCreditFromPerson() {
+        val sms = """
+            Dear Customer your Account ****7659 has been Credited with ETB 25,000.00     On 03 SEP 2026  from SARON SEIFE YIRGU Ref: FT2624630K1Z. Your Current Balance is ETB 25,050.00. For further Info call 9698. Join our social medias using the following link https://www.nibbanksc.com/SocialMedia/. Thank you for Banking with NIB!
+        """.trimIndent()
+        val result = registry.parse("9698", sms)
+
+        assertNotNull(result)
+        assertEquals("Nib International Bank", result?.bankName)
+        assertEquals(TransactionType.CREDIT, result?.type)
+        assertEquals(25000.0, result?.amount ?: 0.0, 0.001)
+        assertEquals(25050.0, result?.balanceAfter ?: 0.0, 0.001)
+        assertEquals("FT2624630K1Z", result?.referenceId)
+        assertEquals("SARON SEIFE YIRGU", result?.counterparty)
+        assertEquals("****7659", result?.accountNumber)
+        assertEquals(com.eyuel.smartspend.domain.model.ExpenseCategory.TRANSFER, result?.suggestedCategory)
+    }
+
+    @Test
     fun testAbyssiniaDebit() {
         val sms = "Dear Customer, your account 10****491 has been debited with ETB 800.00 on 24-Sep-2026. Available balance is ETB 4,100.00. Ref: BOA24098492"
         val result = registry.parse("Abyssinia", sms)
