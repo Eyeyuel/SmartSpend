@@ -82,7 +82,7 @@ class NibParser : BankParser {
 
         // 1. "to telebirr account"
         if (lower.contains("telebirr")) {
-            return Pair("Telebirr Transfer", ExpenseCategory.TRANSFER)
+            return Pair("Telebirr Transfer", ExpenseCategory.INTERNAL_TRANSFER)
         }
 
         // 2. "from <Person> Ref:" or "to <Person> Ref:"

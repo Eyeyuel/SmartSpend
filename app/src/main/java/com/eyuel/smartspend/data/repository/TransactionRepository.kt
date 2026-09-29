@@ -14,6 +14,7 @@ interface TransactionRepository {
     fun getUnreviewedCount(): Flow<Int>
     fun getTransactionsByType(type: TransactionType): Flow<List<TransactionEntity>>
     fun getTransactionById(id: Long): Flow<TransactionEntity?>
+    suspend fun rescanAndHealTransactions(): Int
     suspend fun saveParsedTransaction(parsed: ParsedTransaction): Boolean
     suspend fun saveParsedTransactions(parsedList: List<ParsedTransaction>): Int
     suspend fun updateNoteAndCategory(id: Long, description: String, category: String)
@@ -80,15 +81,38 @@ class TransactionRepositoryImpl(
         return rowId > 0
     }
 
+    override suspend fun rescanAndHealTransactions(): Int {
+        val all = transactionDao.getAllTransactionsList()
+        var updatedCount = 0
+        for (tx in all) {
+            if (tx.isReviewed) continue
+            val parsed = com.eyuel.smartspend.domain.parser.BankParserRegistry.defaultInstance.parse(tx.senderAddress, tx.rawBody, tx.timestamp) ?: continue
+            val newCategory = parsed.suggestedCategory ?: tx.category
+            val newDesc = parsed.counterparty ?: tx.description
+            if (Math.abs(tx.amount - parsed.amount) > 0.001 || tx.category != newCategory || tx.description != newDesc) {
+                val updated = tx.copy(
+                    amount = parsed.amount,
+                    category = newCategory,
+                    description = newDesc,
+                    type = parsed.type,
+                    balanceAfter = parsed.balanceAfter ?: tx.balanceAfter
+                )
+                transactionDao.updateTransaction(updated)
+                updatedCount++
+            }
+        }
+        return updatedCount
+    }
+
     override suspend fun saveParsedTransactions(parsedList: List<ParsedTransaction>): Int {
         if (parsedList.isEmpty()) return 0
 
-        // 1. Fetch existing reference IDs in a single query
-        val existingRefs = transactionDao.getAllReferenceIds().toHashSet()
-
-        // 2. Filter duplicates in-memory
-        val toInsert = mutableListOf<TransactionEntity>()
+        // 1. Fetch existing transactions to handle deduplication & auto-healing
+        val existingList = transactionDao.getAllTransactionsList()
+        val existingMap = existingList.associateBy { it.referenceId }
         val seenRefsInBatch = mutableSetOf<String>()
+        val toInsert = mutableListOf<TransactionEntity>()
+        var healedCount = 0
 
         for (parsed in parsedList) {
             val ref = parsed.referenceId ?: ParserUtils.generateDeterministicReference(
@@ -98,8 +122,30 @@ class TransactionRepositoryImpl(
                 parsed.rawBody
             )
 
-            if (existingRefs.contains(ref) || seenRefsInBatch.contains(ref)) {
-                continue // Already recorded
+            val existing = existingMap[ref]
+            if (existing != null) {
+                // Auto-heal if unreviewed and newly improved parser extracted more accurate amount or category
+                if (!existing.isReviewed) {
+                    val targetCategory = parsed.suggestedCategory ?: existing.category
+                    val targetDesc = parsed.counterparty ?: existing.description
+                    if (Math.abs(existing.amount - parsed.amount) > 0.001 || existing.category != targetCategory || existing.description != targetDesc) {
+                        transactionDao.updateTransaction(
+                            existing.copy(
+                                amount = parsed.amount,
+                                category = targetCategory,
+                                description = targetDesc,
+                                type = parsed.type,
+                                balanceAfter = parsed.balanceAfter ?: existing.balanceAfter
+                            )
+                        )
+                        healedCount++
+                    }
+                }
+                continue
+            }
+
+            if (seenRefsInBatch.contains(ref)) {
+                continue
             }
             seenRefsInBatch.add(ref)
 
@@ -122,11 +168,12 @@ class TransactionRepositoryImpl(
             )
         }
 
-        if (toInsert.isEmpty()) return 0
+        val insertedCount = if (toInsert.isNotEmpty()) {
+            val rowIds = transactionDao.insertAllOrIgnore(toInsert)
+            rowIds.count { it > 0 }
+        } else 0
 
-        // 3. Single atomic batch write to SQLite
-        val rowIds = transactionDao.insertAllOrIgnore(toInsert)
-        return rowIds.count { it > 0 }
+        return insertedCount + healedCount
     }
 
     override suspend fun updateNoteAndCategory(id: Long, description: String, category: String) {

@@ -32,6 +32,7 @@ object ExpenseCategory {
     const val SHOPPING = "Shopping"
     const val SALARY_INCOME = "Salary & Income"
     const val TRANSFER = "Transfer"
+    const val INTERNAL_TRANSFER = "Internal Transfer"
     const val HEALTHCARE = "Healthcare"
     const val ENTERTAINMENT = "Entertainment"
     const val OTHER = "Other"
@@ -45,6 +46,7 @@ object ExpenseCategory {
         SHOPPING,
         SALARY_INCOME,
         TRANSFER,
+        INTERNAL_TRANSFER,
         HEALTHCARE,
         ENTERTAINMENT,
         OTHER

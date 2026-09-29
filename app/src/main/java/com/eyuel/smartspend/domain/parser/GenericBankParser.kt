@@ -141,6 +141,7 @@ class GenericBankParser : BankParser {
                 !lowerCand.contains(bankName.lowercase())
             ) {
                 val cat = when {
+                    lowerCand.contains("telebirr") -> ExpenseCategory.INTERNAL_TRANSFER
                     lowerCand.contains("cafe") || lowerCand.contains("restaurant") || lowerCand.contains("burger") ||
                             lowerCand.contains("pizza") || lowerCand.contains("coffee") || lowerCand.contains("kitchen") -> ExpenseCategory.FOOD_DINING
                     lowerCand.contains("mart") || lowerCand.contains("supermarket") || lowerCand.contains("market") -> ExpenseCategory.GROCERIES

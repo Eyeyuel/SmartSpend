@@ -121,11 +121,13 @@ class TelebirrParser : BankParser {
             return Pair(name, cat)
         }
 
-        // 5. Transfer to person
+        // 5. Transfer to person or bank
         val toPersonRegex = Regex("""transferred\s+ETB\s+[0-9.,]+\s+to\s+([A-Za-z0-9\s'.,]+?)(?:\s*\([0-9*+]+\)|\s+on\s+[0-9])""", RegexOption.IGNORE_CASE)
         val toMatch = toPersonRegex.find(body)
         if (toMatch != null) {
-            return Pair(toMatch.groupValues[1].trim(), ExpenseCategory.TRANSFER)
+            val name = toMatch.groupValues[1].trim()
+            val isBank = name.contains("Bank", ignoreCase = true)
+            return Pair(name, if (isBank) ExpenseCategory.INTERNAL_TRANSFER else ExpenseCategory.TRANSFER)
         }
 
         // 6. Received from person or bank
@@ -133,7 +135,8 @@ class TelebirrParser : BankParser {
         val fromMatch = fromRegex.find(body)
         if (fromMatch != null) {
             val name = fromMatch.groupValues[1].trim()
-            return Pair(name, ExpenseCategory.TRANSFER)
+            val isBank = name.contains("Bank", ignoreCase = true)
+            return Pair(name, if (isBank) ExpenseCategory.INTERNAL_TRANSFER else ExpenseCategory.TRANSFER)
         }
 
         return Pair(null, ExpenseCategory.UNCATEGORIZED)

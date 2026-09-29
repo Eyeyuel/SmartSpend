@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eyuel.smartspend.data.local.TransactionEntity
+import com.eyuel.smartspend.domain.model.ExpenseCategory
 import com.eyuel.smartspend.domain.model.TransactionType
 import com.eyuel.smartspend.ui.CategoryVisuals
 import com.eyuel.smartspend.ui.FormatUtils
@@ -29,7 +30,8 @@ fun TransactionItemCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isIncome = transaction.type == TransactionType.CREDIT
+    val isInternalTransfer = transaction.category == ExpenseCategory.INTERNAL_TRANSFER
+    val isIncome = transaction.type == TransactionType.CREDIT && !isInternalTransfer
     val categoryStyle = remember(transaction.category) {
         CategoryVisuals.getStyle(transaction.category)
     }
@@ -39,8 +41,12 @@ fun TransactionItemCard(
     val formattedDate = remember(transaction.timestamp) {
         FormatUtils.formatShortDate(transaction.timestamp)
     }
-    val formattedAmount = remember(transaction.amount, isIncome, transaction.currency) {
-        "${if (isIncome) "+" else "-"}${FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}"
+    val formattedAmount = remember(transaction.amount, isIncome, isInternalTransfer, transaction.currency) {
+        when {
+            isInternalTransfer -> "${FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}"
+            isIncome -> "+${FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}"
+            else -> "-${FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}"
+        }
     }
 
     Card(
@@ -141,7 +147,11 @@ fun TransactionItemCard(
                     text = formattedAmount,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
-                    color = if (isIncome) Color(0xFF34D399) else Color(0xFFFB7185)
+                    color = when {
+                        isInternalTransfer -> Color(0xFF38BDF8)
+                        isIncome -> Color(0xFF34D399)
+                        else -> Color(0xFFFB7185)
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(2.dp))

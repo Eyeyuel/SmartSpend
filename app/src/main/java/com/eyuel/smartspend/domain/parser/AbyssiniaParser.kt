@@ -68,6 +68,11 @@ class AbyssiniaParser : BankParser {
     }
 
     private fun extractCounterpartyAndCategory(body: String, type: TransactionType): Pair<String?, String> {
+        // 0. Transfer to/from Telebirr
+        if (body.contains("telebirr", ignoreCase = true)) {
+            return Pair("Telebirr Transfer", ExpenseCategory.INTERNAL_TRANSFER)
+        }
+
         // 1. "credited with ETB ... by <Person>."
         val byRegex = Regex("""by\s+([A-Za-z0-9\s.,]+?)(?=\.\s+Available|\.$)""", RegexOption.IGNORE_CASE)
         val byMatch = byRegex.find(body)

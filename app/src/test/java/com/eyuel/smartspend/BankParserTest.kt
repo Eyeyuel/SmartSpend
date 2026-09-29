@@ -175,6 +175,7 @@ class BankParserTest {
         assertEquals("DIT38LM4HL", result?.referenceId)
         assertEquals("Nib International Bank SC", result?.counterparty)
         assertEquals("251979409973", result?.accountNumber)
+        assertEquals(com.eyuel.smartspend.domain.model.ExpenseCategory.INTERNAL_TRANSFER, result?.suggestedCategory)
     }
 
     @Test
@@ -312,7 +313,7 @@ class BankParserTest {
         assertEquals("FT26272JNYFB", result?.referenceId)
         assertEquals("Telebirr Transfer", result?.counterparty)
         assertEquals("****7659", result?.accountNumber)
-        assertEquals(com.eyuel.smartspend.domain.model.ExpenseCategory.TRANSFER, result?.suggestedCategory)
+        assertEquals(com.eyuel.smartspend.domain.model.ExpenseCategory.INTERNAL_TRANSFER, result?.suggestedCategory)
     }
 
     @Test

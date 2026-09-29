@@ -48,6 +48,12 @@ interface TransactionDao {
     @Query("DELETE FROM transactions")
     suspend fun deleteAll()
 
+    @Query("SELECT * FROM transactions")
+    suspend fun getAllTransactionsList(): List<TransactionEntity>
+
+    @Query("SELECT * FROM transactions WHERE referenceId = :referenceId LIMIT 1")
+    suspend fun getTransactionByReference(referenceId: String): TransactionEntity?
+
     @Query("SELECT referenceId FROM transactions WHERE referenceId IS NOT NULL")
     suspend fun getAllReferenceIds(): List<String>
 
@@ -57,18 +63,18 @@ interface TransactionDao {
     @Query("SELECT EXISTS(SELECT 1 FROM transactions WHERE senderAddress = :sender AND ABS(amount - :amount) < 0.001 AND timestamp = :timestamp LIMIT 1)")
     suspend fun hasMatchingTransaction(sender: String, amount: Double, timestamp: Long): Boolean
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'CREDIT'")
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'CREDIT' AND category != 'Internal Transfer'")
     fun getTotalIncome(): Flow<Double?>
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'DEBIT'")
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'DEBIT' AND category != 'Internal Transfer'")
     fun getTotalExpenses(): Flow<Double?>
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'CREDIT' AND timestamp BETWEEN :startMillis AND :endMillis")
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'CREDIT' AND category != 'Internal Transfer' AND timestamp BETWEEN :startMillis AND :endMillis")
     fun getIncomeInRange(startMillis: Long, endMillis: Long): Flow<Double?>
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'DEBIT' AND timestamp BETWEEN :startMillis AND :endMillis")
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'DEBIT' AND category != 'Internal Transfer' AND timestamp BETWEEN :startMillis AND :endMillis")
     fun getExpensesInRange(startMillis: Long, endMillis: Long): Flow<Double?>
 
-    @Query("SELECT category, SUM(amount) AS totalAmount FROM transactions WHERE type = 'DEBIT' AND timestamp BETWEEN :startMillis AND :endMillis GROUP BY category ORDER BY totalAmount DESC")
+    @Query("SELECT category, SUM(amount) AS totalAmount FROM transactions WHERE type = 'DEBIT' AND category != 'Internal Transfer' AND timestamp BETWEEN :startMillis AND :endMillis GROUP BY category ORDER BY totalAmount DESC")
     fun getCategorySpending(startMillis: Long, endMillis: Long): Flow<List<CategorySpending>>
 }

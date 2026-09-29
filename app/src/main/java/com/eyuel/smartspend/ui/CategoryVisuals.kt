@@ -64,6 +64,12 @@ object CategoryVisuals {
                 containerColor = Color(0xFF1C1D42),
                 emoji = "🔄"
             )
+            ExpenseCategory.INTERNAL_TRANSFER -> CategoryStyle(
+                icon = Icons.Default.SyncAlt,
+                color = Color(0xFF38BDF8), // Sky 400
+                containerColor = Color(0xFF0C2B40),
+                emoji = "🔁"
+            )
             ExpenseCategory.HEALTHCARE -> CategoryStyle(
                 icon = Icons.Default.LocalHospital,
                 color = Color(0xFFF43F5E), // Rose 500

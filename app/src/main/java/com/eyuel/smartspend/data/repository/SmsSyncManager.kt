@@ -30,14 +30,19 @@ class SmsSyncManager(
                 "${Telephony.Sms.ADDRESS} LIKE '%cbe%' OR " +
                 "${Telephony.Sms.ADDRESS} LIKE '%telebirr%' OR " +
                 "${Telephony.Sms.ADDRESS} = '127' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%nib%' OR " +
+                "${Telephony.Sms.ADDRESS} = '9698' OR " +
                 "${Telephony.Sms.ADDRESS} LIKE '%abyssinia%' OR " +
                 "${Telephony.Sms.ADDRESS} LIKE '%boa%' OR " +
+                "${Telephony.Sms.ADDRESS} = '8397' OR " +
                 "${Telephony.Sms.ADDRESS} LIKE '%awash%' OR " +
                 "${Telephony.Sms.ADDRESS} LIKE '%dashen%' OR " +
                 "${Telephony.Sms.ADDRESS} LIKE '%bank%' OR " +
                 "${Telephony.Sms.BODY} LIKE '%debited%' OR " +
                 "${Telephony.Sms.BODY} LIKE '%credited%' OR " +
-                "${Telephony.Sms.BODY} LIKE '%transferred%')"
+                "${Telephony.Sms.BODY} LIKE '%transferred%' OR " +
+                "${Telephony.Sms.BODY} LIKE '%recharged%' OR " +
+                "${Telephony.Sms.BODY} LIKE '%package%')"
 
         val selectionArgs = arrayOf(sinceTime.toString())
         val projection = arrayOf(
@@ -79,10 +84,11 @@ class SmsSyncManager(
             }
         }
 
+        val healedCount = repository.rescanAndHealTransactions()
         val imported = repository.saveParsedTransactions(parsedList)
         val durationMs = System.currentTimeMillis() - startTime
-        Log.d("SmartSpend", "Optimized SMS Sync: Scanned $scanned candidate SMS in ${durationMs}ms, imported $imported new transactions")
+        Log.d("SmartSpend", "Optimized SMS Sync: Scanned $scanned candidate SMS in ${durationMs}ms, imported $imported new transactions, healed $healedCount existing")
 
-        SyncResult(scannedCount = scanned, importedCount = imported)
+        SyncResult(scannedCount = scanned, importedCount = imported + healedCount)
     }
 }

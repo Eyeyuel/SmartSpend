@@ -8,6 +8,7 @@ import com.eyuel.smartspend.SmartSpendApp
 import com.eyuel.smartspend.data.local.TransactionEntity
 import com.eyuel.smartspend.data.repository.CsvExportHelper
 import com.eyuel.smartspend.data.repository.SmsSyncManager
+import com.eyuel.smartspend.domain.model.ExpenseCategory
 import com.eyuel.smartspend.domain.model.TimeframePeriod
 import com.eyuel.smartspend.domain.model.TransactionType
 import com.eyuel.smartspend.ui.model.CategorySpendingItem
@@ -81,6 +82,12 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
         UiControls(timeframe, filter, categoryFilter, query, editing, tab, syncing, syncMsg)
     }
 
+    init {
+        viewModelScope.launch {
+            repository.rescanAndHealTransactions()
+        }
+    }
+
     val uiState: StateFlow<DashboardUiState> = combine(
         repository.getAllTransactions(),
         _uiControls
@@ -115,8 +122,9 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
                 unreviewedCount++
             }
 
-            // 7-day spending aggregation
-            if (item.type == TransactionType.DEBIT && item.timestamp >= sevenDaysAgoStart) {
+            // 7-day spending aggregation (exclude internal self-transfers)
+            val isInternalTransfer = item.category == ExpenseCategory.INTERNAL_TRANSFER
+            if (item.type == TransactionType.DEBIT && !isInternalTransfer && item.timestamp >= sevenDaysAgoStart) {
                 val dayStart = DateGroupingUtils.getDayStartMillis(item.timestamp)
                 val dayIndex = ((dayStart - sevenDaysAgoStart) / (24 * 60 * 60 * 1000L)).toInt()
                 if (dayIndex in 0..6) {
@@ -129,7 +137,9 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             if (!isInTimeframe) continue
 
             // Accumulate metrics for active timeframe
-            if (item.type == TransactionType.CREDIT) {
+            if (isInternalTransfer) {
+                // Internal self-transfers do NOT inflate income or expense totals
+            } else if (item.type == TransactionType.CREDIT) {
                 totalIncome += item.amount
             } else {
                 totalExpense += item.amount
@@ -150,8 +160,8 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             val matchesFilter = when (controls.filter) {
                 TransactionFilter.ALL -> true
                 TransactionFilter.UNREVIEWED -> !item.isReviewed
-                TransactionFilter.EXPENSES -> item.type == TransactionType.DEBIT
-                TransactionFilter.INCOME -> item.type == TransactionType.CREDIT
+                TransactionFilter.EXPENSES -> item.type == TransactionType.DEBIT && !isInternalTransfer
+                TransactionFilter.INCOME -> item.type == TransactionType.CREDIT && !isInternalTransfer
             }
 
             // Check Search Query
@@ -175,6 +185,7 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             var daySpent = 0.0
             var dayIncome = 0.0
             for (t in dayItems) {
+                if (t.category == ExpenseCategory.INTERNAL_TRANSFER) continue
                 if (t.type == TransactionType.DEBIT) daySpent += t.amount
                 else dayIncome += t.amount
             }
