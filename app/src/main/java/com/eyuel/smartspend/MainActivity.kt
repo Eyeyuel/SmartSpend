@@ -266,14 +266,6 @@ fun LedgerScreen(
             }
         }
 
-        // Search Bar View
-        item {
-            SearchBarView(
-                query = uiState.searchQuery,
-                onQueryChange = { viewModel.setSearchQuery(it) }
-            )
-        }
-
         // Filter Bar (All, Needs Note (X), Expenses, Income)
         item {
             FilterBar(
@@ -318,6 +310,7 @@ fun LedgerScreen(
             item {
                 EmptyTransactionsView(
                     filter = uiState.activeFilter,
+                    timeframe = uiState.activeTimeframe,
                     hasPermissions = hasSmsPermissions,
                     onScanClick = {
                         if (hasSmsPermissions) viewModel.syncHistoricalSms()
@@ -603,61 +596,68 @@ fun PermissionBanner(onRequestPermissions: () -> Unit) {
 @Composable
 fun EmptyTransactionsView(
     filter: TransactionFilter,
+    timeframe: TimeframePeriod,
     hasPermissions: Boolean,
     onScanClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 24.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B).copy(alpha = 0.5f))
+            .padding(vertical = 16.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF131B2A)),
+        border = BorderStroke(1.dp, Color(0xFF1E2A3F))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(32.dp),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
                 imageVector = Icons.Default.ReceiptLong,
                 contentDescription = null,
                 tint = Color(0xFF64748B),
-                modifier = Modifier.size(54.dp)
+                modifier = Modifier.size(44.dp)
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = when (filter) {
-                    TransactionFilter.ALL -> "No Transactions Yet"
-                    TransactionFilter.UNREVIEWED -> "All Caught Up!"
-                    TransactionFilter.EXPENSES -> "No Expenses Recorded"
-                    TransactionFilter.INCOME -> "No Income Recorded"
+                text = when {
+                    filter == TransactionFilter.UNREVIEWED -> "All Caught Up!"
+                    filter == TransactionFilter.EXPENSES -> "No Expenses ${timeframe.displayName}"
+                    filter == TransactionFilter.INCOME -> "No Income ${timeframe.displayName}"
+                    timeframe == TimeframePeriod.TODAY -> "No Transactions Today"
+                    else -> "No Transactions ${timeframe.displayName}"
                 },
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
-                fontSize = 16.sp
+                fontSize = 15.sp
             )
 
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = if (filter == TransactionFilter.UNREVIEWED) {
-                    "All your transactions have descriptions and categories."
-                } else {
-                    "Tap 'Scan SMS' to import existing banking messages from your inbox, or wait for incoming bank alerts."
+                text = when {
+                    filter == TransactionFilter.UNREVIEWED ->
+                        "All transactions have descriptions and categories."
+                    timeframe == TimeframePeriod.TODAY ->
+                        "No expenses or income tracked yet today. Switch to 'This Week' or 'This Month' above to view previous records, or new transactions will appear as SMS arrive."
+                    else ->
+                        "Tap 'Scan SMS' to import existing banking messages, or wait for incoming bank alerts."
                 },
                 color = Color(0xFF94A3B8),
-                fontSize = 13.sp,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                fontSize = 12.sp,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                lineHeight = 17.sp
             )
 
-            if (filter != TransactionFilter.UNREVIEWED) {
-                Spacer(modifier = Modifier.height(18.dp))
+            if (filter != TransactionFilter.UNREVIEWED && timeframe != TimeframePeriod.TODAY) {
+                Spacer(modifier = Modifier.height(14.dp))
                 Button(
                     onClick = onScanClick,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(if (hasPermissions) "Scan Past SMS Now" else "Grant Permission & Scan")
                 }

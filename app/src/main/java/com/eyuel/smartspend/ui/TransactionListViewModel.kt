@@ -37,7 +37,7 @@ data class DashboardUiState(
     val totalExpense: Double = 0.0,
     val totalBalance: Double = 0.0,
     val unreviewedCount: Int = 0,
-    val activeTimeframe: TimeframePeriod = TimeframePeriod.THIS_MONTH,
+    val activeTimeframe: TimeframePeriod = TimeframePeriod.TODAY,
     val activeFilter: TransactionFilter = TransactionFilter.ALL,
     val selectedCategoryFilter: String? = null,
     val searchQuery: String = "",
@@ -63,7 +63,7 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
     private val repository = SmartSpendApp.instance.repository
     private val syncManager = SmsSyncManager(application, repository)
 
-    private val _activeTimeframe = MutableStateFlow(TimeframePeriod.THIS_MONTH)
+    private val _activeTimeframe = MutableStateFlow(TimeframePeriod.TODAY)
     private val _activeFilter = MutableStateFlow(TransactionFilter.ALL)
     private val _selectedCategoryFilter = MutableStateFlow<String?>(null)
     private val _searchQuery = MutableStateFlow("")
