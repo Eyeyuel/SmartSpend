@@ -36,6 +36,102 @@ class BankParserTest {
     }
 
     @Test
+    fun testCbeTransferOutWithFees() {
+        val sms = """
+            Dear  Eyuel Teklu Berhe You have successfully transferred ETB1150.00 from account 1**7868 to account 1**9667 (Alemtsehay Birhane Kahsay). Service charge of ETB 1.00 and VAT(15%) of ETB0.15 and Disaster Recovery(5%) of 0.05 with total of ETB1151.20 .Your current balance is ETB24,188.28. Thanks for Banking with CBE. https://mbreciept.cbe.com.et/v2-hfHCxHb3KSsLvR50iT9X  for feedback: https://forms.gle/kGNGQpG3mQCCk3iD6
+        """.trimIndent()
+        val result = registry.parse("CBE", sms)
+
+        assertNotNull(result)
+        assertEquals("CBE", result?.bankName)
+        assertEquals(TransactionType.DEBIT, result?.type)
+        assertEquals(1150.0, result?.amount ?: 0.0, 0.001)
+        assertEquals(24188.28, result?.balanceAfter ?: 0.0, 0.001)
+        assertEquals("v2-hfHCxHb3KSsLvR50iT9X", result?.referenceId)
+        assertEquals("Alemtsehay Birhane Kahsay", result?.counterparty)
+        assertEquals("1**7868", result?.accountNumber)
+        assertEquals(com.eyuel.smartspend.domain.model.ExpenseCategory.TRANSFER, result?.suggestedCategory)
+    }
+
+    @Test
+    fun testCbeTransferReceived() {
+        val sms = """
+            Dear Eyuel Teklu Berhe You have received ETB 300.00 from account 1**7426 (Minilik Belachew Balkideru) to your account 1**7868. Your current balance is ETB25,490.09. Thanks for Banking with CBE. https://mbreciept.cbe.com.et/v2-hfHCxHaJLoC0SNH0cnM9  for feedback: https://forms.gle/kGNGQpG3mQCCk3iD6
+        """.trimIndent()
+        val result = registry.parse("CBE", sms)
+
+        assertNotNull(result)
+        assertEquals(TransactionType.CREDIT, result?.type)
+        assertEquals(300.0, result?.amount ?: 0.0, 0.001)
+        assertEquals(25490.09, result?.balanceAfter ?: 0.0, 0.001)
+        assertEquals("v2-hfHCxHaJLoC0SNH0cnM9", result?.referenceId)
+        assertEquals("Minilik Belachew Balkideru", result?.counterparty)
+        assertEquals("1**7868", result?.accountNumber)
+        assertEquals(com.eyuel.smartspend.domain.model.ExpenseCategory.TRANSFER, result?.suggestedCategory)
+    }
+
+    @Test
+    fun testCbeBranchDepositReceipt() {
+        val sms = """
+            Dear Mr Eyuel your Account 1****7868 has been credited with ETB 500.00. Your Current Balance is ETB 26341.29. Thank you for Banking with CBE! for Reciept https://apps.cbe.com.et:100/BranchReceipt/FT2626535R4H&11207868
+        """.trimIndent()
+        val result = registry.parse("CBE", sms)
+
+        assertNotNull(result)
+        assertEquals(TransactionType.CREDIT, result?.type)
+        assertEquals(500.0, result?.amount ?: 0.0, 0.001)
+        assertEquals(26341.29, result?.balanceAfter ?: 0.0, 0.001)
+        assertEquals("FT2626535R4H", result?.referenceId)
+        assertEquals("1****7868", result?.accountNumber)
+    }
+
+    @Test
+    fun testCbeDebitTransactionDotFormat() {
+        val sms = """
+            Dear Eyuel Teklu Berhe A debit transaction of ETB 20.0. has occurred on your account 1****7868. Service charge of ETB 0.00 and VAT(15%) of 0.0 and Disaster Recovery(5%) of 0.00 with total of ETB20.00 .Your current balance is ETB36,050.34. Thanks for Banking with CBE. https://mbreciept.cbe.com.et/v2-hfHCxGW4hEH9Xr1KbbG1  for feedback: https://forms.gle/kGNGQpG3mQCCk3iD6
+        """.trimIndent()
+        val result = registry.parse("CBE", sms)
+
+        assertNotNull(result)
+        assertEquals(TransactionType.DEBIT, result?.type)
+        assertEquals(20.0, result?.amount ?: 0.0, 0.001)
+        assertEquals(36050.34, result?.balanceAfter ?: 0.0, 0.001)
+        assertEquals("v2-hfHCxGW4hEH9Xr1KbbG1", result?.referenceId)
+        assertEquals("1****7868", result?.accountNumber)
+    }
+
+    @Test
+    fun testCbeDirectDebitAlert() {
+        val sms = """
+            Dear Mr Eyuel your Account 1****7868 has been debited with ETB 4023 including Service charge ETB0.00ETB0.00 and VAT(15%) . Your Current Balance is ETB 20165.28. Thank you for Banking with CBE!. For feedback https://shorturl.at/auUX0
+        """.trimIndent()
+        val result = registry.parse("CBE", sms)
+
+        assertNotNull(result)
+        assertEquals(TransactionType.DEBIT, result?.type)
+        assertEquals(4023.0, result?.amount ?: 0.0, 0.001)
+        assertEquals(20165.28, result?.balanceAfter ?: 0.0, 0.001)
+        assertNotNull(result?.referenceId) // Deterministic signature
+        assertEquals("1****7868", result?.accountNumber)
+    }
+
+    @Test
+    fun testCbeHighValueTransferReceived() {
+        val sms = """
+            Dear Eyuel Teklu Berhe You have received ETB 12,500.00 from account 1**4135 (Saron Seife Yirgu) to your account 1**7868. Your current balance is ETB55,566.00. Thanks for Banking with CBE. https://mbreciept.cbe.com.et/v2-hfHCxG6SmYfM6Fmn2cqp  for feedback: https://forms.gle/kGNGQpG3mQCCk3iD6
+        """.trimIndent()
+        val result = registry.parse("CBE", sms)
+
+        assertNotNull(result)
+        assertEquals(TransactionType.CREDIT, result?.type)
+        assertEquals(12500.0, result?.amount ?: 0.0, 0.001)
+        assertEquals(55566.0, result?.balanceAfter ?: 0.0, 0.001)
+        assertEquals("v2-hfHCxG6SmYfM6Fmn2cqp", result?.referenceId)
+        assertEquals("Saron Seife Yirgu", result?.counterparty)
+        assertEquals("1**7868", result?.accountNumber)
+    }
+
+    @Test
     fun testTelebirrMerchantPayment() {
         val sms = "You have paid ETB 450.00 to Kaldi's Coffee (Merchant ID: 84920) on 24/09/2026 09:15:30. Transaction ID: 1048291055. Remaining balance is ETB 1,000.00."
         val result = registry.parse("telebirr", sms)
