@@ -7,9 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eyuel.smartspend.data.local.TransactionEntity
@@ -33,7 +33,7 @@ fun EditTransactionBottomSheet(
     transaction: TransactionEntity,
     onDismiss: () -> Unit,
     onSave: (id: Long, description: String, category: String) -> Unit,
-    onDelete: (id: Long) -> Unit
+    onDelete: ((id: Long) -> Unit)? = null
 ) {
     var description by remember(transaction) { mutableStateOf(transaction.description) }
     var selectedCategory by remember(transaction) { mutableStateOf(transaction.category) }
@@ -44,8 +44,27 @@ fun EditTransactionBottomSheet(
     }
 
     val isIncome = transaction.type == TransactionType.CREDIT
+    val isInternalTransfer = transaction.category == ExpenseCategory.INTERNAL_TRANSFER
     val bankVisual = remember(transaction.bankName) {
         CategoryVisuals.getBankVisual(transaction.bankName)
+    }
+
+    // Requested ordering: Transportation first, Food & Dining second
+    val orderedCategories = remember {
+        listOf(
+            ExpenseCategory.TRANSPORTATION,
+            ExpenseCategory.FOOD_DINING,
+            ExpenseCategory.GROCERIES,
+            ExpenseCategory.BILLS_UTILITIES,
+            ExpenseCategory.SHOPPING,
+            ExpenseCategory.TRANSFER,
+            ExpenseCategory.INTERNAL_TRANSFER,
+            ExpenseCategory.SALARY_INCOME,
+            ExpenseCategory.HEALTHCARE,
+            ExpenseCategory.ENTERTAINMENT,
+            ExpenseCategory.OTHER,
+            ExpenseCategory.UNCATEGORIZED
+        )
     }
 
     ModalBottomSheet(
@@ -57,7 +76,7 @@ fun EditTransactionBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp),
+                .padding(bottom = 36.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header: Bank, Date, Amount
@@ -98,19 +117,27 @@ fun EditTransactionBottomSheet(
                 }
 
                 Text(
-                    text = "${if (isIncome) "+" else "-"}${FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}",
+                    text = when {
+                        isInternalTransfer -> "${FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}"
+                        isIncome -> "+${FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}"
+                        else -> "-${FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}"
+                    },
                     fontSize = 18.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (isIncome) Color(0xFF34D399) else Color(0xFFFB7185)
+                    color = when {
+                        isInternalTransfer -> Color(0xFF38BDF8)
+                        isIncome -> Color(0xFF34D399)
+                        else -> Color(0xFFFB7185)
+                    }
                 )
             }
 
-            // Description Input Field
+            // Description Input Field with Done action to save
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
                 label = { Text("Add Description / Note", color = Color(0xFF94A3B8)) },
-                placeholder = { Text("e.g. Lunch with friends, groceries, fuel, wifi...", color = Color(0xFF64748B)) },
+                placeholder = { Text("e.g. Taxi to office, lunch, groceries...", color = Color(0xFF64748B)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -121,18 +148,35 @@ fun EditTransactionBottomSheet(
                     focusedContainerColor = Color(0xFF0F172A),
                     unfocusedContainerColor = Color(0xFF0F172A)
                 ),
-                singleLine = false,
-                maxLines = 3
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        onSave(transaction.id, description, selectedCategory)
+                    }
+                )
             )
 
-            // Category Selector with rich icons and colors
+            // Category Selector: Tap to save instantly
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "Select Category",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF94A3B8)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Select Category",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF94A3B8)
+                    )
+                    Text(
+                        text = "Tap to save",
+                        fontSize = 11.sp,
+                        color = Color(0xFF38BDF8),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
 
                 Row(
                     modifier = Modifier
@@ -140,12 +184,15 @@ fun EditTransactionBottomSheet(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    ExpenseCategory.allCategories.forEach { cat ->
+                    orderedCategories.forEach { cat ->
                         val isSelected = cat == selectedCategory
                         val style = CategoryVisuals.getStyle(cat)
 
                         Surface(
-                            onClick = { selectedCategory = cat },
+                            onClick = {
+                                selectedCategory = cat
+                                onSave(transaction.id, description, cat)
+                            },
                             shape = RoundedCornerShape(10.dp),
                             color = if (isSelected) style.containerColor else Color(0xFF0F172A),
                             border = BorderStroke(
@@ -154,19 +201,19 @@ fun EditTransactionBottomSheet(
                             )
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
                                     imageVector = style.icon,
                                     contentDescription = cat,
                                     tint = if (isSelected) style.color else Color(0xFF94A3B8),
-                                    modifier = Modifier.size(15.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = cat,
-                                    fontSize = 12.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                     color = if (isSelected) Color.White else Color(0xFFCBD5E1)
                                 )
@@ -197,41 +244,6 @@ fun EditTransactionBottomSheet(
                         lineHeight = 17.sp,
                         color = Color(0xFF94A3B8)
                     )
-                }
-            }
-
-            // Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = { onDelete(transaction.id) }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = Color(0xFFFB7185)
-                    )
-                }
-
-                Button(
-                    onClick = {
-                        onSave(transaction.id, description, selectedCategory)
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 12.dp)
-                        .height(46.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Save", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }
