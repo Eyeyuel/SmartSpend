@@ -347,6 +347,48 @@ class BankParserTest {
     }
 
     @Test
+    fun testAbyssiniaCreditWithSlip() {
+        val sms = """
+            Dear Eyuel, your account 1*75 was credited with ETB 1,565.00 by Yididya Rezene Abrha. Available Balance: ETB 2,034.01.
+            Receipt: https://cs.bankofabyssinia.com/slip/?trx=FT26264JFPVM92688
+            Feedback: https://cs.bankofabyssinia.com/cs/?trx=CFT26264JFPVM
+            Link your Fayda: https://cs.bankofabyssinia.com/fayda_connect 
+            For help, call 8397 (24/7 Toll-Free). Bank of Abyssinia.
+        """.trimIndent()
+        val result = registry.parse("BOA", sms)
+
+        assertNotNull(result)
+        assertEquals("Bank of Abyssinia", result?.bankName)
+        assertEquals(TransactionType.CREDIT, result?.type)
+        assertEquals(1565.0, result?.amount ?: 0.0, 0.001)
+        assertEquals(2034.01, result?.balanceAfter ?: 0.0, 0.001)
+        assertEquals("FT26264JFPVM92688", result?.referenceId)
+        assertEquals("Yididya Rezene Abrha", result?.counterparty)
+        assertEquals("1*75", result?.accountNumber)
+        assertEquals(com.eyuel.smartspend.domain.model.ExpenseCategory.TRANSFER, result?.suggestedCategory)
+    }
+
+    @Test
+    fun testAbyssiniaDebitWithSlip() {
+        val sms = """
+            Dear Eyuel, your account 1*75 was debited with ETB 1,005.41. Available Balance: ETB 231.28.
+            Receipt: https://cs.bankofabyssinia.com/slip/?trx=FT262020CXSJ08675
+            Feedback: https://cs.bankofabyssinia.com/cs/?trx=DFT262020CXSJ
+            Link your Fayda: https://cs.bankofabyssinia.com/fayda_connect 
+            For help, call 8397 (24/7 Toll-Free). Bank of Abyssinia.
+        """.trimIndent()
+        val result = registry.parse("8397", sms)
+
+        assertNotNull(result)
+        assertEquals("Bank of Abyssinia", result?.bankName)
+        assertEquals(TransactionType.DEBIT, result?.type)
+        assertEquals(1005.41, result?.amount ?: 0.0, 0.001)
+        assertEquals(231.28, result?.balanceAfter ?: 0.0, 0.001)
+        assertEquals("FT262020CXSJ08675", result?.referenceId)
+        assertEquals("1*75", result?.accountNumber)
+    }
+
+    @Test
     fun testAwashGenericParsing() {
         val sms = "Dear Customer, your account 013****123 is debited by ETB 600.00 on 24/09/2026. Bal: ETB 8,200.00. Ref: AW2910482. Awash Bank."
         val result = registry.parse("AwashBank", sms)

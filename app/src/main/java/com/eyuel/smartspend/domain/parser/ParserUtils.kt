@@ -28,7 +28,7 @@ object ParserUtils {
         // CBE: "mbreciept.cbe.com.et/v2-hfHCxHb3KSsLvR50iT9X" or "Ref: FT240912..."
         // BOA / Awash / Dashen: "Txn ID: 1048291048", "Transaction ID: 9482910", "Trans. ID: 128471"
         val regex = Regex(
-            """(?:\b(?:by\s+)?transaction\s+number\s+(?:is\s+)?|receipt/|mbreciept\.cbe\.com\.et/|BranchReceipt/|Ref(?:\s*no|\.|\s*id)?[\s:]*|Txn\s*ID[\s:]*|Transaction\s*ID[\s:]*|Trans(?:\.|\s*)ID[\s:]*)([A-Za-z0-9\-_]{6,})""",
+            """(?:[?&]trx=|\b(?:by\s+)?transaction\s+number\s+(?:is\s+)?|receipt/|mbreciept\.cbe\.com\.et/|BranchReceipt/|Ref(?:\s*no|\.|\s*id)?[\s:]*|Txn\s*ID[\s:]*|Transaction\s*ID[\s:]*|Trans(?:\.|\s*)ID[\s:]*)([A-Za-z0-9\-_]{6,})""",
             RegexOption.IGNORE_CASE
         )
         return regex.find(text)?.groupValues?.getOrNull(1)
@@ -51,10 +51,11 @@ object ParserUtils {
     fun extractAccountNumber(text: String): String? {
         // Matches e.g.:
         // "account 1000****4912"
+        // "account 1*75"
         // "A/C 10****491"
         // "account number: 1000123456"
         val regex = Regex(
-            """(?:account(?:\s*number)?|A/C)[\s:]*([0-9*xX]{4,})""",
+            """(?:account(?:\s*number)?|A/C)[\s:]*([0-9*xX]{3,})""",
             RegexOption.IGNORE_CASE
         )
         return regex.find(text)?.groupValues?.getOrNull(1)
