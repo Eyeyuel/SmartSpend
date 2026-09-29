@@ -5,6 +5,7 @@ import com.eyuel.smartspend.data.local.TransactionDao
 import com.eyuel.smartspend.data.local.TransactionEntity
 import com.eyuel.smartspend.domain.model.ParsedTransaction
 import com.eyuel.smartspend.domain.model.TransactionType
+import com.eyuel.smartspend.domain.parser.ParserUtils
 import kotlinx.coroutines.flow.Flow
 
 interface TransactionRepository {
@@ -45,8 +46,15 @@ class TransactionRepositoryImpl(
         transactionDao.getTransactionById(id)
 
     override suspend fun saveParsedTransaction(parsed: ParsedTransaction): Boolean {
+        val ref = parsed.referenceId ?: ParserUtils.generateDeterministicReference(
+            parsed.senderAddress,
+            parsed.timestamp,
+            parsed.amount,
+            parsed.rawBody
+        )
+
         // Deduplication check: check referenceId or matching sender/amount/timestamp
-        if (parsed.referenceId != null && transactionDao.hasTransactionWithReference(parsed.referenceId)) {
+        if (transactionDao.hasTransactionWithReference(ref)) {
             return false // Already recorded
         }
         if (transactionDao.hasMatchingTransaction(parsed.senderAddress, parsed.amount, parsed.timestamp)) {
@@ -54,7 +62,7 @@ class TransactionRepositoryImpl(
         }
 
         val entity = TransactionEntity(
-            referenceId = parsed.referenceId,
+            referenceId = ref,
             bankName = parsed.bankName,
             senderAddress = parsed.senderAddress,
             amount = parsed.amount,
@@ -83,17 +91,21 @@ class TransactionRepositoryImpl(
         val seenRefsInBatch = mutableSetOf<String>()
 
         for (parsed in parsedList) {
-            val ref = parsed.referenceId
-            if (ref != null && (existingRefs.contains(ref) || seenRefsInBatch.contains(ref))) {
+            val ref = parsed.referenceId ?: ParserUtils.generateDeterministicReference(
+                parsed.senderAddress,
+                parsed.timestamp,
+                parsed.amount,
+                parsed.rawBody
+            )
+
+            if (existingRefs.contains(ref) || seenRefsInBatch.contains(ref)) {
                 continue // Already recorded
             }
-            if (ref != null) {
-                seenRefsInBatch.add(ref)
-            }
+            seenRefsInBatch.add(ref)
 
             toInsert.add(
                 TransactionEntity(
-                    referenceId = parsed.referenceId,
+                    referenceId = ref,
                     bankName = parsed.bankName,
                     senderAddress = parsed.senderAddress,
                     amount = parsed.amount,

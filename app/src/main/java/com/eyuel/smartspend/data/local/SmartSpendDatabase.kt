@@ -6,6 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
+import androidx.sqlite.db.SupportSQLiteDatabase
+
 @Database(
     entities = [TransactionEntity::class],
     version = 1,
@@ -28,6 +30,25 @@ abstract class SmartSpendDatabase : RoomDatabase() {
                     "smartspend_database"
                 )
                     .fallbackToDestructiveMigration()
+                    .addCallback(object : Callback() {
+                        override fun onOpen(db: SupportSQLiteDatabase) {
+                            super.onOpen(db)
+                            // 1. Purge duplicate rows created by repeated scanning
+                            db.execSQL("""
+                                DELETE FROM transactions WHERE id NOT IN (
+                                    SELECT MIN(id) FROM transactions 
+                                    GROUP BY bankName, senderAddress, amount, type, timestamp, rawBody
+                                )
+                            """.trimIndent())
+
+                            // 2. Ensure every legacy transaction has a non-null referenceId
+                            db.execSQL("""
+                                UPDATE transactions 
+                                SET referenceId = 'legacy_' || id || '_' || timestamp 
+                                WHERE referenceId IS NULL
+                            """.trimIndent())
+                        }
+                    })
                     .build()
                 INSTANCE = instance
                 instance
