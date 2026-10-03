@@ -21,7 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Insights
-import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
@@ -133,38 +133,11 @@ fun MainScreen(viewModel: TransactionListViewModel) {
             )
         },
         bottomBar = {
-            NavigationBar(
-                containerColor = Color(0xFF0E1524),
-                tonalElevation = 0.dp
-            ) {
-                NavigationBarItem(
-                    selected = uiState.selectedTab == 0,
-                    onClick = { viewModel.setSelectedTab(0) },
-                    icon = { Icon(Icons.Default.ReceiptLong, contentDescription = "Ledger") },
-                    label = { Text("Ledger", fontWeight = FontWeight.SemiBold, fontSize = 12.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color.White,
-                        selectedTextColor = Color.White,
-                        indicatorColor = Color(0xFF25344D),
-                        unselectedIconColor = Color(0xFF64748B),
-                        unselectedTextColor = Color(0xFF64748B)
-                    )
-                )
-
-                NavigationBarItem(
-                    selected = uiState.selectedTab == 1,
-                    onClick = { viewModel.setSelectedTab(1) },
-                    icon = { Icon(Icons.Default.Insights, contentDescription = "Analytics") },
-                    label = { Text("Insights", fontWeight = FontWeight.SemiBold, fontSize = 12.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color.White,
-                        selectedTextColor = Color.White,
-                        indicatorColor = Color(0xFF25344D),
-                        unselectedIconColor = Color(0xFF64748B),
-                        unselectedTextColor = Color(0xFF64748B)
-                    )
-                )
-            }
+            SmartSpendBottomNavBar(
+                selectedTab = uiState.selectedTab,
+                onTabSelected = { tab -> viewModel.setSelectedTab(tab) },
+                unreviewedCount = uiState.unreviewedCount
+            )
         }
     ) { innerPadding ->
         if (uiState.selectedTab == 0) {
@@ -615,7 +588,7 @@ fun EmptyTransactionsView(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                imageVector = Icons.Default.ReceiptLong,
+                imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
                 contentDescription = null,
                 tint = Color(0xFF64748B),
                 modifier = Modifier.size(44.dp)
