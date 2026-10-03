@@ -1,18 +1,23 @@
 package com.eyuel.smartspend.ui.components
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,34 +48,45 @@ fun TransactionItemCard(
     }
     val formattedAmount = remember(transaction.amount, isIncome, isInternalTransfer, transaction.currency) {
         when {
-            isInternalTransfer -> "${FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}"
-            isIncome -> "+${FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}"
-            else -> "-${FormatUtils.formatAmount(transaction.amount)} ${transaction.currency}"
+            isInternalTransfer -> "${FormatUtils.formatAmount(transaction.amount)}"
+            isIncome -> "+${FormatUtils.formatAmount(transaction.amount)}"
+            else -> "-${FormatUtils.formatAmount(transaction.amount)}"
         }
     }
 
-    Card(
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "card_scale"
+    )
+
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF131B2A)),
-        border = BorderStroke(1.dp, Color(0xFF1E2A3F))
+            .scale(scale)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(),
+                onClick = onClick
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp) // Less vertical padding
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Category Icon Badge with indicator
+            // Category Icon Badge
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(11.dp))
-                    .background(categoryStyle.containerColor)
-                    .border(1.dp, categoryStyle.color.copy(alpha = 0.25f), RoundedCornerShape(11.dp)),
+                    .size(40.dp) // Slightly smaller icon badge
+                    .clip(CircleShape)
+                    .background(categoryStyle.containerColor.copy(alpha = 0.8f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -85,60 +101,47 @@ fun TransactionItemCard(
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(3.dp)
-                            .size(7.dp)
+                            .padding(2.dp)
+                            .size(10.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF59E0B))
-                    )
+                            .background(Color(0xFF0F172A))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFF59E0B))
+                        )
+                    }
                 }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp)) // Less spacing
+
+            // Center details: Title & Subtitle
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (transaction.description.isNotBlank()) transaction.description else transaction.category,
+                    fontSize = 14.sp, // Smaller title
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "${bankVisual.shortName} • $formattedDate",
+                    fontSize = 12.sp, // Smaller subtitle
+                    color = Color(0xFF8E9CAE),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Center details: Title & Subtitle
-            Column(modifier = Modifier.weight(1f)) {
-                if (transaction.description.isNotBlank()) {
-                    Text(
-                        text = transaction.description,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "${bankVisual.shortName} • $formattedDate",
-                        fontSize = 12.sp,
-                        color = Color(0xFF94A3B8),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                } else {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = bankVisual.shortName,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "${transaction.category} • $formattedDate",
-                        fontSize = 12.sp,
-                        color = Color(0xFF94A3B8),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Right column: Amount and status
+            // Right column: Amount
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.Center
@@ -146,33 +149,27 @@ fun TransactionItemCard(
                 Text(
                     text = formattedAmount,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
+                    fontSize = 14.sp, // Smaller amount
                     color = when {
-                        isInternalTransfer -> Color(0xFF38BDF8)
-                        isIncome -> Color(0xFF34D399)
-                        else -> Color(0xFFFB7185)
+                        isInternalTransfer -> Color.White
+                        isIncome -> Color(0xFF34D399) // Green
+                        else -> Color.White
                     }
                 )
 
                 Spacer(modifier = Modifier.height(2.dp))
 
                 if (!transaction.isReviewed) {
-                    Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = Color(0xFF451A03).copy(alpha = 0.7f)
-                    ) {
-                        Text(
-                            text = "Needs note",
-                            color = Color(0xFFFBBF24),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
-                        )
-                    }
+                    Text(
+                        text = "Review",
+                        color = Color(0xFFF59E0B),
+                        fontSize = 10.sp, // Smaller
+                        fontWeight = FontWeight.Medium
+                    )
                 } else if (transaction.description.isNotBlank()) {
                     Text(
                         text = transaction.category,
-                        fontSize = 11.sp,
+                        fontSize = 10.sp, // Smaller
                         color = Color(0xFF64748B),
                         maxLines = 1
                     )

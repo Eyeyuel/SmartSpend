@@ -64,7 +64,7 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
     private val repository = SmartSpendApp.instance.repository
     private val syncManager = SmsSyncManager(application, repository)
 
-    private val _activeTimeframe = MutableStateFlow(TimeframePeriod.TODAY)
+    private val _activeTimeframe = MutableStateFlow(TimeframePeriod.ALL_TIME)
     private val _activeFilter = MutableStateFlow(TransactionFilter.ALL)
     private val _selectedCategoryFilter = MutableStateFlow<String?>(null)
     private val _searchQuery = MutableStateFlow("")

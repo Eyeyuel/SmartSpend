@@ -11,13 +11,18 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Insights
@@ -44,6 +49,7 @@ import com.eyuel.smartspend.ui.TransactionListViewModel
 import com.eyuel.smartspend.ui.components.*
 import com.eyuel.smartspend.ui.theme.IncomeGreen
 import com.eyuel.smartspend.ui.theme.SmartSpendTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -99,6 +105,26 @@ fun MainScreen(viewModel: TransactionListViewModel) {
         }
     }
 
+    val pagerState = rememberPagerState(
+        initialPage = uiState.selectedTab,
+        pageCount = { 2 }
+    )
+    val coroutineScope = rememberCoroutineScope()
+
+    // Sync BottomNav -> Pager
+    LaunchedEffect(uiState.selectedTab) {
+        if (pagerState.currentPage != uiState.selectedTab) {
+            pagerState.animateScrollToPage(uiState.selectedTab)
+        }
+    }
+
+    // Sync Pager -> BottomNav
+    LaunchedEffect(pagerState.currentPage) {
+        if (uiState.selectedTab != pagerState.currentPage) {
+            viewModel.setSelectedTab(pagerState.currentPage)
+        }
+    }
+
     Scaffold(
         containerColor = Color(0xFF0B0F17),
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -135,40 +161,50 @@ fun MainScreen(viewModel: TransactionListViewModel) {
         bottomBar = {
             SmartSpendBottomNavBar(
                 selectedTab = uiState.selectedTab,
-                onTabSelected = { tab -> viewModel.setSelectedTab(tab) },
+                onTabSelected = { tab -> 
+                    viewModel.setSelectedTab(tab)
+                    coroutineScope.launch { pagerState.animateScrollToPage(tab) }
+                },
                 unreviewedCount = uiState.unreviewedCount
             )
         }
     ) { innerPadding ->
-        if (uiState.selectedTab == 0) {
-            // TAB 0: LEDGER & REVIEW SCREEN
-            LedgerScreen(
-                uiState = uiState,
-                hasSmsPermissions = hasSmsPermissions,
-                viewModel = viewModel,
-                onRequestPermissions = {
-                    val perms = mutableListOf(
-                        Manifest.permission.RECEIVE_SMS,
-                        Manifest.permission.READ_SMS
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = innerPadding.calculateTopPadding())
+        ) { page ->
+            when (page) {
+                0 -> {
+                    // TAB 0: LEDGER & REVIEW SCREEN
+                    LedgerScreen(
+                        uiState = uiState,
+                        hasSmsPermissions = hasSmsPermissions,
+                        viewModel = viewModel,
+                        onRequestPermissions = {
+                            val perms = mutableListOf(
+                                Manifest.permission.RECEIVE_SMS,
+                                Manifest.permission.READ_SMS
+                            )
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                perms.add(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                            permissionLauncher.launch(perms.toTypedArray())
+                        },
+                        modifier = Modifier.fillMaxSize()
                     )
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        perms.add(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                    permissionLauncher.launch(perms.toTypedArray())
-                },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            )
-        } else {
-            // TAB 1: ANALYTICS & INTELLIGENCE SCREEN
-            AnalyticsScreen(
-                uiState = uiState,
-                onExportCsv = { viewModel.exportTransactionsCsv(context) },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            )
+                }
+                1 -> {
+                    // TAB 1: ANALYTICS & INTELLIGENCE SCREEN
+                    AnalyticsScreen(
+                        uiState = uiState,
+                        onExportCsv = { viewModel.exportTransactionsCsv(context) },
+                        viewModel = viewModel,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
         }
     }
 
@@ -187,6 +223,7 @@ fun MainScreen(viewModel: TransactionListViewModel) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LedgerScreen(
     uiState: DashboardUiState,
@@ -197,8 +234,8 @@ fun LedgerScreen(
 ) {
     LazyColumn(
         modifier = modifier.padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(bottom = 24.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 100.dp)
     ) {
         if (!hasSmsPermissions) {
             item {
@@ -206,81 +243,30 @@ fun LedgerScreen(
             }
         }
 
-        // Financial Summary Card
-        item {
-            FinancialSummaryCard(
+        item(key = "wallet_header") {
+            com.eyuel.smartspend.ui.components.PremiumWalletHeader(
                 totalBalance = uiState.totalBalance,
-                totalIncome = uiState.totalIncome,
-                totalExpense = uiState.totalExpense,
                 isSyncing = uiState.isSyncing,
                 onSyncClick = {
                     if (hasSmsPermissions) viewModel.syncHistoricalSms()
                     else onRequestPermissions()
-                }
+                },
+                modifier = Modifier.animateItem()
             )
         }
 
-        // Timeframe Selector: Today | This Week | This Month | All Time
-        item {
-            TimeframeSelector(
-                activeTimeframe = uiState.activeTimeframe,
-                onTimeframeSelected = { viewModel.setTimeframe(it) }
-            )
-        }
-
-        // Category Spending Carousel (Tap-to-filter)
-        if (uiState.categoryBreakdown.isNotEmpty()) {
-            item {
-                CategorySpendingCarousel(
-                    categories = uiState.categoryBreakdown,
-                    selectedCategory = uiState.selectedCategoryFilter,
-                    onCategoryClick = { viewModel.toggleCategoryFilter(it) }
-                )
-            }
-        }
-
-        // Filter Bar (All, Needs Note (X), Expenses, Income)
-        item {
-            FilterBar(
+        item(key = "filter_tabs") {
+            com.eyuel.smartspend.ui.components.AnimatedFilterTabs(
                 activeFilter = uiState.activeFilter,
                 unreviewedCount = uiState.unreviewedCount,
-                onFilterSelected = { viewModel.setFilter(it) }
+                onFilterSelected = { viewModel.setFilter(it) },
+                modifier = Modifier.padding(bottom = 8.dp).animateItem()
             )
-        }
-
-        // Stream Header
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 6.dp, bottom = 2.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = when (uiState.activeFilter) {
-                        TransactionFilter.ALL -> "Transaction Stream"
-                        TransactionFilter.UNREVIEWED -> "Pending Review"
-                        TransactionFilter.EXPENSES -> "Expenses"
-                        TransactionFilter.INCOME -> "Income"
-                    },
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-
-                Text(
-                    text = "${uiState.transactions.size} records",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF64748B)
-                )
-            }
         }
 
         // Empty State or Date-Grouped Transaction Stream
         if (uiState.transactions.isEmpty()) {
-            item {
+            item(key = "empty_state") {
                 EmptyTransactionsView(
                     filter = uiState.activeFilter,
                     timeframe = uiState.activeTimeframe,
@@ -288,17 +274,19 @@ fun LedgerScreen(
                     onScanClick = {
                         if (hasSmsPermissions) viewModel.syncHistoricalSms()
                         else onRequestPermissions()
-                    }
+                    },
+                    modifier = Modifier.animateItem()
                 )
             }
         } else {
             // Render Date-Grouped Stream
             uiState.groupedTransactions.forEach { group ->
-                item(key = "header_${group.dayEpoch}") {
+                stickyHeader(key = "header_${group.dayEpoch}") {
                     DateGroupHeader(
                         dateLabel = group.dateLabel,
                         dailySpent = group.dailySpent,
-                        dailyIncome = group.dailyIncome
+                        dailyIncome = group.dailyIncome,
+                        modifier = Modifier.animateItem()
                     )
                 }
 
@@ -308,7 +296,8 @@ fun LedgerScreen(
                 ) { transaction ->
                     TransactionItemCard(
                         transaction = transaction,
-                        onClick = { viewModel.openEdit(transaction) }
+                        onClick = { viewModel.openEdit(transaction) },
+                        modifier = Modifier.animateItem()
                     )
                 }
             }
@@ -319,33 +308,95 @@ fun LedgerScreen(
 @Composable
 fun AnalyticsScreen(
     uiState: DashboardUiState,
+    viewModel: TransactionListViewModel,
     onExportCsv: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
         modifier = modifier.padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp)
+        contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
     ) {
-        // 7-Day Canvas Spending Bar Chart
+        // 1. Timeframe Selector
+        item {
+            TimeframeSelector(
+                activeTimeframe = uiState.activeTimeframe,
+                onTimeframeSelected = { viewModel.setTimeframe(it) }
+            )
+        }
+
+        // 2. High-Level Net Cashflow Summary Card
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF131B2A)),
+                border = BorderStroke(1.dp, Color(0xFF1E2A3F))
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text("Net Cashflow", color = Color(0xFF94A3B8), fontSize = 13.sp)
+                    val net = uiState.totalIncome - uiState.totalExpense
+                    val netColor = if (net >= 0) Color(0xFF34D399) else Color(0xFFFB7185)
+                    Text(
+                        text = "${if (net >= 0) "+" else ""}${FormatUtils.formatAmount(net)} ETB",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = netColor
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier.size(20.dp).clip(CircleShape).background(Color(0xFF042F2E)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.ArrowDownward, contentDescription = null, tint = Color(0xFF34D399), modifier = Modifier.size(12.dp))
+                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Income", color = Color(0xFF94A3B8), fontSize = 13.sp)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(FormatUtils.formatAmount(uiState.totalIncome), color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier.size(20.dp).clip(CircleShape).background(Color(0xFF4C1D95).copy(alpha = 0.3f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.ArrowUpward, contentDescription = null, tint = Color(0xFFFB7185), modifier = Modifier.size(12.dp))
+                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Expenses", color = Color(0xFF94A3B8), fontSize = 13.sp)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(FormatUtils.formatAmount(uiState.totalExpense), color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Trend Chart (Weekly Spending)
         item {
             WeeklySpendingBarChart(bars = uiState.weeklyChartBars)
         }
 
-        // Smart Spending Insights Card
+        // 4. Smart AI Insights
         uiState.insights?.let { insights ->
             item {
                 SpendingInsightsCard(insights = insights)
             }
         }
 
-        // Category Spending Detailed Breakdown
+        // 5. Category Breakdown (Polished)
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF131C2E)),
-                border = BorderStroke(1.dp, Color(0xFF223048))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF131B2A)),
+                border = BorderStroke(1.dp, Color(0xFF1E2A3F))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
@@ -355,19 +406,18 @@ fun AnalyticsScreen(
                     ) {
                         Text(
                             text = "Category Distribution",
-                            fontSize = 14.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
-
                         Text(
                             text = uiState.activeTimeframe.displayName,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             color = Color(0xFF94A3B8)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     if (uiState.categoryBreakdown.isEmpty()) {
                         Text(
@@ -376,7 +426,7 @@ fun AnalyticsScreen(
                             color = Color(0xFF94A3B8)
                         )
                     } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                             uiState.categoryBreakdown.forEach { item ->
                                 val style = com.eyuel.smartspend.ui.CategoryVisuals.getStyle(item.category)
                                 Column {
@@ -388,45 +438,52 @@ fun AnalyticsScreen(
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Box(
                                                 modifier = Modifier
-                                                    .size(24.dp)
-                                                    .clip(RoundedCornerShape(6.dp))
-                                                    .background(style.containerColor),
+                                                    .size(28.dp)
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(style.containerColor.copy(alpha = 0.8f)),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Icon(
                                                     imageVector = style.icon,
                                                     contentDescription = item.category,
                                                     tint = style.color,
-                                                    modifier = Modifier.size(14.dp)
+                                                    modifier = Modifier.size(16.dp)
                                                 )
                                             }
-                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Spacer(modifier = Modifier.width(10.dp))
                                             Text(
                                                 text = item.category,
-                                                fontSize = 13.sp,
-                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Medium,
                                                 color = Color.White
                                             )
                                         }
 
-                                        Text(
-                                            text = "${FormatUtils.formatAmount(item.totalAmount)} ETB (${(item.percentage * 100).toInt()}%)",
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFCBD5E1)
-                                        )
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text(
+                                                text = "${FormatUtils.formatAmount(item.totalAmount)} ETB",
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = Color.White
+                                            )
+                                            Text(
+                                                text = "${(item.percentage * 100).toInt()}%",
+                                                fontSize = 11.sp,
+                                                color = Color(0xFF94A3B8)
+                                            )
+                                        }
                                     }
 
-                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
 
                                     LinearProgressIndicator(
-                                        progress = { item.percentage },
+                                        progress = { item.percentage.coerceIn(0f, 1f) },
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(5.dp)
+                                            .height(6.dp)
                                             .clip(RoundedCornerShape(3.dp)),
                                         color = style.color,
-                                        trackColor = Color(0xFF1E293B)
+                                        trackColor = Color(0xFF0F172A)
                                     )
                                 }
                             }
@@ -436,13 +493,13 @@ fun AnalyticsScreen(
             }
         }
 
-        // Export Data Card
+        // 6. Export Data Card
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF131C2E)),
-                border = BorderStroke(1.dp, Color(0xFF223048))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF131B2A)),
+                border = BorderStroke(1.dp, Color(0xFF1E2A3F))
             ) {
                 Row(
                     modifier = Modifier
@@ -458,18 +515,21 @@ fun AnalyticsScreen(
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "Save as .csv spreadsheet for Excel or Google Sheets",
                             fontSize = 12.sp,
-                            color = Color(0xFF94A3B8)
+                            color = Color(0xFF94A3B8),
+                            lineHeight = 16.sp
                         )
                     }
-
+                    Spacer(modifier = Modifier.width(12.dp))
                     Button(
                         onClick = onExportCsv,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
                     ) {
-                        Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(androidx.compose.material.icons.Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Export", fontWeight = FontWeight.Bold)
                     }
@@ -571,10 +631,11 @@ fun EmptyTransactionsView(
     filter: TransactionFilter,
     timeframe: TimeframePeriod,
     hasPermissions: Boolean,
-    onScanClick: () -> Unit
+    onScanClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 16.dp),
         shape = RoundedCornerShape(16.dp),

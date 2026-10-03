@@ -36,4 +36,25 @@ object FormatUtils {
     fun formatAmount(amount: Double): String {
         return decimalFormat.get()?.format(amount) ?: String.format(Locale.US, "%.2f", amount)
     }
+
+    fun getSmartDateString(timestamp: Long): String {
+        val calendar = Calendar.getInstance()
+        val todayYear = calendar.get(Calendar.YEAR)
+        val todayDay = calendar.get(Calendar.DAY_OF_YEAR)
+
+        calendar.timeInMillis = timestamp
+        val targetYear = calendar.get(Calendar.YEAR)
+        val targetDay = calendar.get(Calendar.DAY_OF_YEAR)
+
+        return when {
+            todayYear == targetYear && todayDay == targetDay -> "Today"
+            todayYear == targetYear && todayDay - targetDay == 1 -> "Yesterday"
+            todayYear == targetYear -> {
+                SimpleDateFormat("MMMM d", Locale.getDefault()).format(Date(timestamp))
+            }
+            else -> {
+                SimpleDateFormat("MMMM d, yyyy", Locale.getDefault()).format(Date(timestamp))
+            }
+        }
+    }
 }

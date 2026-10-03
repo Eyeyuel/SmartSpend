@@ -20,13 +20,17 @@ fun DateGroupHeader(
     dailyIncome: Double,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 2.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = Color(0xEB0B0F17), // 92% opaque background matching the scaffold
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
         Text(
             text = dateLabel,
             fontSize = 12.sp,
@@ -68,6 +72,7 @@ fun DateGroupHeader(
                     )
                 }
             }
+        }
         }
     }
 }
