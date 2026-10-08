@@ -44,19 +44,18 @@ fun SmartSpendBottomNavBar(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 72.dp) // Even smaller width
             .padding(bottom = 24.dp),
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            color = Color(0xFF131B2A), // Solid dark blue
+            color = androidx.compose.material3.MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(24.dp),
             shadowElevation = 16.dp,
-            modifier = Modifier.height(60.dp).fillMaxWidth()
+            modifier = Modifier.height(60.dp).wrapContentWidth()
         ) {
             Row(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier.fillMaxHeight().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 NavBarItem(
@@ -65,7 +64,7 @@ fun SmartSpendBottomNavBar(
                     isSelected = selectedTab == 0,
                     badgeCount = unreviewedCount,
                     onClick = { onTabSelected(0) },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.wrapContentWidth().padding(horizontal = 12.dp)
                 )
 
                 NavBarItem(
@@ -74,7 +73,7 @@ fun SmartSpendBottomNavBar(
                     isSelected = selectedTab == 1,
                     badgeCount = 0,
                     onClick = { onTabSelected(1) },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.wrapContentWidth().padding(horizontal = 12.dp)
                 )
             }
         }
@@ -90,8 +89,8 @@ private fun NavBarItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val activeColor = Color.White
-    val inactiveColor = Color(0xFF64748B)
+    val activeColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
+    val inactiveColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
 
     val iconColor by animateColorAsState(
         targetValue = if (isSelected) activeColor else inactiveColor,
@@ -140,21 +139,11 @@ private fun NavBarItem(
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .offset(x = 10.dp, y = (-6).dp)
-                            .defaultMinSize(minWidth = 14.dp, minHeight = 14.dp)
-                            .clip(RoundedCornerShape(7.dp))
-                            .background(Color(0xFFEF4444))
-                            .padding(horizontal = 3.dp, vertical = 1.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (badgeCount > 99) "99+" else badgeCount.toString(),
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            textAlign = TextAlign.Center
-                        )
-                    }
+                            .offset(x = 6.dp, y = (-2).dp)
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF59E0B))
+                    )
                 }
             }
 

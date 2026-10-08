@@ -78,8 +78,8 @@ fun EditTransactionBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF131B2A),
-        dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFF475569)) }
+        containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant) }
     ) {
         Column(
             modifier = Modifier
@@ -115,12 +115,12 @@ fun EditTransactionBottomSheet(
                             text = bankVisual.shortName,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = formattedDate,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF94A3B8)
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -145,17 +145,17 @@ fun EditTransactionBottomSheet(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Add Description / Note", color = Color(0xFF94A3B8)) },
-                placeholder = { Text("e.g. Taxi to office, lunch, groceries...", color = Color(0xFF64748B)) },
+                label = { Text("Add Description / Note", color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant) },
+                placeholder = { Text("e.g. Taxi to office, lunch, groceries...", color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
+                    focusedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color(0xFF1E2A3F),
-                    focusedContainerColor = Color(0xFF0F172A),
-                    unfocusedContainerColor = Color(0xFF0F172A)
+                    unfocusedBorderColor = androidx.compose.material3.MaterialTheme.colorScheme.outline,
+                    focusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.background,
+                    unfocusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.background
                 ),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -177,7 +177,7 @@ fun EditTransactionBottomSheet(
                         text = "Select Category",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF94A3B8)
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "Tap to save",
@@ -203,10 +203,10 @@ fun EditTransactionBottomSheet(
                                 onSave(transaction.id, description, cat)
                             },
                             shape = RoundedCornerShape(10.dp),
-                            color = if (isSelected) style.containerColor else Color(0xFF0F172A),
+                            color = if (isSelected) style.color.copy(alpha = 0.15f) else androidx.compose.material3.MaterialTheme.colorScheme.background,
                             border = BorderStroke(
                                 1.dp,
-                                if (isSelected) style.color else Color(0xFF1E2A3F)
+                                if (isSelected) style.color else androidx.compose.material3.MaterialTheme.colorScheme.outline
                             )
                         ) {
                             Row(
@@ -216,7 +216,7 @@ fun EditTransactionBottomSheet(
                                 Icon(
                                     imageVector = style.icon,
                                     contentDescription = cat,
-                                    tint = if (isSelected) style.color else Color(0xFF94A3B8),
+                                    tint = if (isSelected) style.color else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -224,7 +224,7 @@ fun EditTransactionBottomSheet(
                                     text = cat,
                                     fontSize = 13.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) Color.White else Color(0xFFCBD5E1)
+                                    color = if (isSelected) androidx.compose.material3.MaterialTheme.colorScheme.onSurface else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 if (isSelected) {
                                     Spacer(modifier = Modifier.width(6.dp))
@@ -245,22 +245,22 @@ fun EditTransactionBottomSheet(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
-                border = BorderStroke(1.dp, Color(0xFF1E2A3F))
+                colors = CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.background),
+                border = BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
                         text = "Original Bank SMS",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF64748B)
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = transaction.rawBody,
                         fontSize = 12.sp,
                         lineHeight = 17.sp,
-                        color = Color(0xFF94A3B8)
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

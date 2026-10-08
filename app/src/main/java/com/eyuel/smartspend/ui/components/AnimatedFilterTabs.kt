@@ -39,7 +39,7 @@ fun AnimatedFilterTabs(
         modifier = modifier
             .fillMaxWidth()
             .clip(CircleShape)
-            .background(Color(0xFF131C29))
+            .background(androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant)
             .padding(4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -51,7 +51,7 @@ fun AnimatedFilterTabs(
                 label = "tab_bg"
             )
             val textColor by animateColorAsState(
-                targetValue = if (isSelected) Color.White else Color(0xFF8E9CAE),
+                targetValue = if (isSelected) Color.White else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                 label = "tab_text"
             )
 
@@ -79,20 +79,10 @@ fun AnimatedFilterTabs(
                         Spacer(modifier = Modifier.width(4.dp))
                         Box(
                             modifier = Modifier
-                                .defaultMinSize(minWidth = 16.dp, minHeight = 16.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) Color.White else Color(0xFFE11D48))
-                                .padding(horizontal = 4.dp, vertical = 2.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (unreviewedCount > 99) "99+" else unreviewedCount.toString(),
-                                color = if (isSelected) Color(0xFF2AABEE) else Color.White,
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            )
-                        }
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(if (isSelected) Color.White else Color(0xFFF59E0B))
+                        )
                     }
                 }
             }

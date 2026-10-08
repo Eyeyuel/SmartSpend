@@ -89,11 +89,11 @@ private fun FilterTabChip(
         } else if (hasHighlight) {
             Color(0xFF451A03).copy(alpha = 0.4f)
         } else {
-            Color(0xFF131B2A)
+            androidx.compose.material3.MaterialTheme.colorScheme.surface
         },
         border = BorderStroke(
             1.dp,
-            if (isSelected) accentColor else if (hasHighlight) Color(0xFFF59E0B).copy(alpha = 0.5f) else Color(0xFF1E2A3F)
+            if (isSelected) accentColor else if (hasHighlight) Color(0xFFF59E0B).copy(alpha = 0.5f) else androidx.compose.material3.MaterialTheme.colorScheme.outline
         )
     ) {
         Row(
@@ -103,7 +103,7 @@ private fun FilterTabChip(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (isSelected) accentColor else if (hasHighlight) Color(0xFFFBBF24) else Color(0xFF94A3B8),
+                tint = if (isSelected) accentColor else if (hasHighlight) Color(0xFFFBBF24) else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(15.dp)
             )
             Spacer(modifier = Modifier.width(5.dp))
@@ -111,7 +111,7 @@ private fun FilterTabChip(
                 text = title,
                 fontSize = 12.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) Color.White else if (hasHighlight) Color(0xFFFBBF24) else Color(0xFF94A3B8)
+                color = if (isSelected) androidx.compose.material3.MaterialTheme.colorScheme.onSurface else if (hasHighlight) Color(0xFFFBBF24) else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

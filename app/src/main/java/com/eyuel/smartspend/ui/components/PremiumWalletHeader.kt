@@ -11,6 +11,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,6 +28,8 @@ import com.eyuel.smartspend.ui.FormatUtils
 @Composable
 fun PremiumWalletHeader(
     totalBalance: Double,
+    isBalanceVisible: Boolean,
+    onToggleVisibility: () -> Unit,
     isSyncing: Boolean,
     onSyncClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -46,7 +52,7 @@ fun PremiumWalletHeader(
     ) {
         Text(
             text = "Total Balance",
-            color = Color(0xFF8E9CAE),
+            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium
         )
@@ -54,11 +60,16 @@ fun PremiumWalletHeader(
         Spacer(modifier = Modifier.height(4.dp))
         
         Text(
-            text = "${FormatUtils.formatAmount(totalBalance)} ETB",
-            color = Color.White,
+            text = if (isBalanceVisible) "${FormatUtils.formatAmount(totalBalance)} ETB" else "••••••",
+            color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
             fontSize = 36.sp,
             fontWeight = FontWeight.Bold,
-            letterSpacing = (-1).sp
+            letterSpacing = (-1).sp,
+            modifier = Modifier.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null, // No ripple effect for a clean text toggle
+                onClick = onToggleVisibility
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -66,7 +77,7 @@ fun PremiumWalletHeader(
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(20.dp))
-                .background(Color(0xFF131C29))
+                .background(androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant)
                 .clickable { onSyncClick() }
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
@@ -75,7 +86,7 @@ fun PremiumWalletHeader(
                 Icon(
                     imageVector = Icons.Default.Sync,
                     contentDescription = "Sync",
-                    tint = if (isSyncing) Color(0xFF2AABEE) else Color(0xFF8E9CAE),
+                    tint = if (isSyncing) Color(0xFF2AABEE) else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .size(16.dp)
                         .rotate(if (isSyncing) syncRotation else 0f)
@@ -83,7 +94,7 @@ fun PremiumWalletHeader(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = if (isSyncing) "Syncing SMS..." else "Sync Recent",
-                    color = if (isSyncing) Color(0xFF2AABEE) else Color(0xFF8E9CAE),
+                    color = if (isSyncing) Color(0xFF2AABEE) else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold
                 )

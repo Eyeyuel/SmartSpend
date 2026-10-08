@@ -86,7 +86,7 @@ fun TransactionItemCard(
                 modifier = Modifier
                     .size(40.dp) // Slightly smaller icon badge
                     .clip(CircleShape)
-                    .background(categoryStyle.containerColor.copy(alpha = 0.8f)),
+                    .background(categoryStyle.color.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -104,7 +104,7 @@ fun TransactionItemCard(
                             .padding(2.dp)
                             .size(10.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF0F172A))
+                            .background(androidx.compose.material3.MaterialTheme.colorScheme.background)
                     ) {
                         Box(
                             modifier = Modifier
@@ -125,7 +125,7 @@ fun TransactionItemCard(
                     text = if (transaction.description.isNotBlank()) transaction.description else transaction.category,
                     fontSize = 14.sp, // Smaller title
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -133,7 +133,7 @@ fun TransactionItemCard(
                 Text(
                     text = "${bankVisual.shortName} • $formattedDate",
                     fontSize = 12.sp, // Smaller subtitle
-                    color = Color(0xFF8E9CAE),
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -151,9 +151,9 @@ fun TransactionItemCard(
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp, // Smaller amount
                     color = when {
-                        isInternalTransfer -> Color.White
-                        isIncome -> Color(0xFF34D399) // Green
-                        else -> Color.White
+                        isInternalTransfer -> androidx.compose.material3.MaterialTheme.colorScheme.onSurface
+                        isIncome -> Color(0xFF10B981) // Emerald 500
+                        else -> androidx.compose.material3.MaterialTheme.colorScheme.onSurface
                     }
                 )
 
@@ -170,7 +170,7 @@ fun TransactionItemCard(
                     Text(
                         text = transaction.category,
                         fontSize = 10.sp, // Smaller
-                        color = Color(0xFF64748B),
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
                 }

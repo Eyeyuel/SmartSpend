@@ -36,15 +36,15 @@ fun SpendingInsightsCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF131C2E)),
-        border = BorderStroke(1.dp, Color(0xFF223048))
+        colors = CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Financial Intelligence",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -119,7 +119,7 @@ private fun InsightRow(
             Text(
                 text = title,
                 fontSize = 13.sp,
-                color = Color(0xFF94A3B8)
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -127,7 +127,7 @@ private fun InsightRow(
             text = value,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color.White
+            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
         )
     }
 }

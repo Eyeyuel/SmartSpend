@@ -18,18 +18,18 @@ val ExpenseRed = Color(0xFFF43F5E)
 val ExpenseRedContainer = Color(0xFFFFE4E6)
 val PendingOrange = Color(0xFFF59E0B)
 
-// Modern Dark Mode Palette
-val DarkBackground = Color(0xFF0F172A)     // Slate 900
-val DarkSurface = Color(0xFF1E293B)        // Slate 800
-val DarkSurfaceVariant = Color(0xFF334155) // Slate 700
-val DarkBorder = Color(0xFF475569)
-val TextPrimaryDark = Color(0xFFF8FAFC)
-val TextSecondaryDark = Color(0xFF94A3B8)
+// Modern Dark Mode Palette (Our Custom Fintech Theme)
+val DarkBackground = Color(0xFF0B0F17)     // Deep Blue/Black
+val DarkSurface = Color(0xFF131B2A)        // Navy Card Surface
+val DarkSurfaceVariant = Color(0xFF1E2A3F) // Lighter Navy for borders/search
+val DarkBorder = Color(0xFF1E2A3F)
+val TextPrimaryDark = Color.White
+val TextSecondaryDark = Color(0xFF8E9CAE)
 
-// Modern Light Mode Palette
-val LightBackground = Color(0xFFF8FAFC)
-val LightSurface = Color(0xFFFFFFFF)
-val LightSurfaceVariant = Color(0xFFF1F5F9)
-val LightBorder = Color(0xFFE2E8F0)
-val TextPrimaryLight = Color(0xFF0F172A)
-val TextSecondaryLight = Color(0xFF64748B)
+// Modern Light Mode Palette (Crisp & Clean)
+val LightBackground = Color(0xFFF8FAFC)    // Slate 50
+val LightSurface = Color(0xFFFFFFFF)       // Stark White Cards
+val LightSurfaceVariant = Color(0xFFF1F5F9)// Slate 100
+val LightBorder = Color(0xFFE2E8F0)        // Slate 200
+val TextPrimaryLight = Color(0xFF0F172A)   // Slate 900
+val TextSecondaryLight = Color(0xFF64748B) // Slate 500

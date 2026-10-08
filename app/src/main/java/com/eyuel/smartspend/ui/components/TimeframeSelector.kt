@@ -28,8 +28,8 @@ fun TimeframeSelector(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = Color(0xFF131B2A),
-        border = BorderStroke(1.dp, Color(0xFF1E2A3F))
+        color = androidx.compose.material3.MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier
@@ -42,11 +42,11 @@ fun TimeframeSelector(
                 val isSelected = period == activeTimeframe
 
                 val animatedBgColor by animateColorAsState(
-                    targetValue = if (isSelected) Color(0xFF25344D) else Color.Transparent,
+                    targetValue = if (isSelected) androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
                     label = "timeframe_bg"
                 )
                 val animatedTextColor by animateColorAsState(
-                    targetValue = if (isSelected) Color.White else Color(0xFF94A3B8),
+                    targetValue = if (isSelected) androidx.compose.material3.MaterialTheme.colorScheme.onSurface else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                     label = "timeframe_text"
                 )
 

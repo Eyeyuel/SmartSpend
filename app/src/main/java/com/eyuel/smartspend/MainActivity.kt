@@ -13,6 +13,8 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -59,7 +61,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            SmartSpendTheme(darkTheme = true) {
+            SmartSpendTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -117,6 +119,8 @@ fun MainScreen(viewModel: TransactionListViewModel) {
             pagerState.animateScrollToPage(uiState.selectedTab)
         }
     }
+    var isSplashShowing by remember { mutableStateOf(true) }
+    var isBalanceVisible by remember { mutableStateOf(false) }
 
     // Sync Pager -> BottomNav
     LaunchedEffect(pagerState.currentPage) {
@@ -125,39 +129,14 @@ fun MainScreen(viewModel: TransactionListViewModel) {
         }
     }
 
-    Scaffold(
-        containerColor = Color(0xFF0B0F17),
+    if (isSplashShowing) {
+        com.eyuel.smartspend.ui.components.SplashScreen(
+            onSplashComplete = { isSplashShowing = false }
+        )
+    } else {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "SmartSpend",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(7.dp)
-                                    .clip(CircleShape)
-                                    .background(if (hasSmsPermissions) Color(0xFF10B981) else Color(0xFFF59E0B))
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (hasSmsPermissions) "SMS Tracking Active" else "Permissions Required",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = if (hasSmsPermissions) Color(0xFF34D399) else Color(0xFFFBBF24)
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0B0F17))
-            )
-        },
         bottomBar = {
             SmartSpendBottomNavBar(
                 selectedTab = uiState.selectedTab,
@@ -180,6 +159,8 @@ fun MainScreen(viewModel: TransactionListViewModel) {
                     // TAB 0: LEDGER & REVIEW SCREEN
                     LedgerScreen(
                         uiState = uiState,
+                        isBalanceVisible = isBalanceVisible,
+                        onToggleVisibility = { isBalanceVisible = !isBalanceVisible },
                         hasSmsPermissions = hasSmsPermissions,
                         viewModel = viewModel,
                         onRequestPermissions = {
@@ -199,6 +180,8 @@ fun MainScreen(viewModel: TransactionListViewModel) {
                     // TAB 1: ANALYTICS & INTELLIGENCE SCREEN
                     AnalyticsScreen(
                         uiState = uiState,
+                        isBalanceVisible = isBalanceVisible,
+                        onToggleVisibility = { isBalanceVisible = !isBalanceVisible },
                         onExportCsv = { viewModel.exportTransactionsCsv(context) },
                         viewModel = viewModel,
                         modifier = Modifier.fillMaxSize()
@@ -222,11 +205,14 @@ fun MainScreen(viewModel: TransactionListViewModel) {
         )
     }
 }
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LedgerScreen(
     uiState: DashboardUiState,
+    isBalanceVisible: Boolean,
+    onToggleVisibility: () -> Unit,
     hasSmsPermissions: Boolean,
     viewModel: TransactionListViewModel,
     onRequestPermissions: () -> Unit,
@@ -245,7 +231,9 @@ fun LedgerScreen(
 
         item(key = "wallet_header") {
             com.eyuel.smartspend.ui.components.PremiumWalletHeader(
-                totalBalance = uiState.totalBalance,
+                totalBalance = uiState.ledgerTotalBalance,
+                isBalanceVisible = isBalanceVisible,
+                onToggleVisibility = onToggleVisibility,
                 isSyncing = uiState.isSyncing,
                 onSyncClick = {
                     if (hasSmsPermissions) viewModel.syncHistoricalSms()
@@ -305,9 +293,12 @@ fun LedgerScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AnalyticsScreen(
     uiState: DashboardUiState,
+    isBalanceVisible: Boolean,
+    onToggleVisibility: () -> Unit,
     viewModel: TransactionListViewModel,
     onExportCsv: () -> Unit,
     modifier: Modifier = Modifier
@@ -315,64 +306,100 @@ fun AnalyticsScreen(
     LazyColumn(
         modifier = modifier.padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
+        contentPadding = PaddingValues(bottom = 100.dp)
     ) {
         // 1. Timeframe Selector
-        item {
-            TimeframeSelector(
-                activeTimeframe = uiState.activeTimeframe,
-                onTimeframeSelected = { viewModel.setTimeframe(it) }
-            )
+        stickyHeader {
+            Surface(
+                color = androidx.compose.material3.MaterialTheme.colorScheme.background,
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp)
+            ) {
+                TimeframeSelector(
+                    activeTimeframe = uiState.activeTimeframe,
+                    onTimeframeSelected = { viewModel.setTimeframe(it) }
+                )
+            }
         }
 
-        // 2. High-Level Net Cashflow Summary Card
+        // 2. High-Level Net Cashflow Summary Header
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF131B2A)),
-                border = BorderStroke(1.dp, Color(0xFF1E2A3F))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Net Cashflow", color = Color(0xFF94A3B8), fontSize = 13.sp)
-                    val net = uiState.totalIncome - uiState.totalExpense
-                    val netColor = if (net >= 0) Color(0xFF34D399) else Color(0xFFFB7185)
-                    Text(
-                        text = "${if (net >= 0) "+" else ""}${FormatUtils.formatAmount(net)} ETB",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = netColor
+                Text(
+                    text = "Net Cashflow",
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                val net = uiState.totalIncome - uiState.totalExpense
+                val netColor = if (net >= 0) Color(0xFF34D399) else Color(0xFFFB7185)
+                Text(
+                    text = if (isBalanceVisible) "${if (net > 0) "+" else ""}${FormatUtils.formatAmount(net)} ETB" else "••••••",
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-1).sp,
+                    color = netColor,
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onToggleVisibility
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier.size(20.dp).clip(CircleShape).background(Color(0xFF042F2E)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(Icons.Default.ArrowDownward, contentDescription = null, tint = Color(0xFF34D399), modifier = Modifier.size(12.dp))
-                                }
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Income", color = Color(0xFF94A3B8), fontSize = 13.sp)
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(FormatUtils.formatAmount(uiState.totalIncome), color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), 
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.ArrowDownward, contentDescription = null, tint = Color(0xFF34D399), modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Income", color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                         }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier.size(20.dp).clip(CircleShape).background(Color(0xFF4C1D95).copy(alpha = 0.3f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(Icons.Default.ArrowUpward, contentDescription = null, tint = Color(0xFFFB7185), modifier = Modifier.size(12.dp))
-                                }
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Expenses", color = Color(0xFF94A3B8), fontSize = 13.sp)
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(FormatUtils.formatAmount(uiState.totalExpense), color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isBalanceVisible) FormatUtils.formatAmount(uiState.totalIncome) else "••••••",
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                            modifier = Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = onToggleVisibility
+                            )
+                        )
+                    }
+                    
+                    Box(modifier = Modifier.width(1.dp).height(32.dp).background(androidx.compose.material3.MaterialTheme.colorScheme.outline)) // Divider
+                    
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.ArrowUpward, contentDescription = null, tint = Color(0xFFFB7185), modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Expenses", color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                         }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isBalanceVisible) FormatUtils.formatAmount(uiState.totalExpense) else "••••••",
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                            modifier = Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = onToggleVisibility
+                            )
+                        )
                     }
                 }
             }
@@ -395,8 +422,8 @@ fun AnalyticsScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF131B2A)),
-                border = BorderStroke(1.dp, Color(0xFF1E2A3F))
+                colors = CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
@@ -440,7 +467,7 @@ fun AnalyticsScreen(
                                                 modifier = Modifier
                                                     .size(28.dp)
                                                     .clip(RoundedCornerShape(8.dp))
-                                                    .background(style.containerColor.copy(alpha = 0.8f)),
+                                                    .background(style.color.copy(alpha = 0.15f)),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Icon(
@@ -455,7 +482,7 @@ fun AnalyticsScreen(
                                                 text = item.category,
                                                 fontSize = 14.sp,
                                                 fontWeight = FontWeight.Medium,
-                                                color = Color.White
+                                                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
                                             )
                                         }
 
@@ -464,7 +491,7 @@ fun AnalyticsScreen(
                                                 text = "${FormatUtils.formatAmount(item.totalAmount)} ETB",
                                                 fontSize = 14.sp,
                                                 fontWeight = FontWeight.SemiBold,
-                                                color = Color.White
+                                                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
                                             )
                                             Text(
                                                 text = "${(item.percentage * 100).toInt()}%",
@@ -483,7 +510,7 @@ fun AnalyticsScreen(
                                             .height(6.dp)
                                             .clip(RoundedCornerShape(3.dp)),
                                         color = style.color,
-                                        trackColor = Color(0xFF0F172A)
+                                        trackColor = androidx.compose.material3.MaterialTheme.colorScheme.background
                                     )
                                 }
                             }
@@ -493,46 +520,35 @@ fun AnalyticsScreen(
             }
         }
 
-        // 6. Export Data Card
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF131B2A)),
-                border = BorderStroke(1.dp, Color(0xFF1E2A3F))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Export Transaction Ledger",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Save as .csv spreadsheet for Excel or Google Sheets",
-                            fontSize = 12.sp,
-                            color = Color(0xFF94A3B8),
-                            lineHeight = 16.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Button(
-                        onClick = onExportCsv,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
-                    ) {
-                        Icon(androidx.compose.material.icons.Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Export", fontWeight = FontWeight.Bold)
-                    }
+        if (uiState.analyticsGroupedTransactions.isNotEmpty()) {
+            item {
+                Text(
+                    text = "Transactions",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+                )
+            }
+            uiState.analyticsGroupedTransactions.forEach { group ->
+                stickyHeader(key = "analytics_header_${group.dayEpoch}") {
+                    DateGroupHeader(
+                        dateLabel = group.dateLabel,
+                        dailySpent = group.dailySpent,
+                        dailyIncome = group.dailyIncome,
+                        modifier = Modifier.animateItem()
+                    )
+                }
+
+                items(
+                    items = group.transactions,
+                    key = { "analytics_${it.id}" }
+                ) { transaction ->
+                    TransactionItemCard(
+                        transaction = transaction,
+                        onClick = { viewModel.openEdit(transaction) },
+                        modifier = Modifier.animateItem()
+                    )
                 }
             }
         }
@@ -547,13 +563,13 @@ fun SearchBarView(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = Color(0xFF131B2A),
-        border = BorderStroke(1.dp, Color(0xFF1E2A3F))
+        color = androidx.compose.material3.MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline)
     ) {
         TextField(
             value = query,
             onValueChange = onQueryChange,
-            placeholder = { Text("Search by bank, note, or ref #", color = Color(0xFF64748B), fontSize = 13.sp) },
+            placeholder = { Text("Search by bank, note, or ref #", color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp) },
             leadingIcon = {
                 Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(18.dp))
             },
@@ -583,7 +599,7 @@ fun PermissionBanner(onRequestPermissions: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF7C2D12).copy(alpha = 0.4f))
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF59E0B).copy(alpha = 0.15f))
     ) {
         Row(
             modifier = Modifier
@@ -618,7 +634,7 @@ fun PermissionBanner(onRequestPermissions: () -> Unit) {
             Button(
                 onClick = onRequestPermissions,
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316))
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))
             ) {
                 Text("Allow", fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
@@ -639,8 +655,8 @@ fun EmptyTransactionsView(
             .fillMaxWidth()
             .padding(vertical = 16.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF131B2A)),
-        border = BorderStroke(1.dp, Color(0xFF1E2A3F))
+        colors = CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier

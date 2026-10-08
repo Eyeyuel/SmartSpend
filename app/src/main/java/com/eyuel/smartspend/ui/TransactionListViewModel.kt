@@ -31,12 +31,14 @@ data class DashboardUiState(
     val transactions: List<TransactionEntity> = emptyList(),
     val rawAllTransactions: List<TransactionEntity> = emptyList(),
     val groupedTransactions: List<DateGroupedTransactions> = emptyList(),
+    val analyticsGroupedTransactions: List<DateGroupedTransactions> = emptyList(),
     val categoryBreakdown: List<CategorySpendingItem> = emptyList(),
     val weeklyChartBars: List<DailySpendingBar> = emptyList(),
     val insights: SpendingInsights? = null,
     val totalIncome: Double = 0.0,
     val totalExpense: Double = 0.0,
     val totalBalance: Double = 0.0,
+    val ledgerTotalBalance: Double = 0.0,
     val unreviewedCount: Int = 0,
     val activeTimeframe: TimeframePeriod = TimeframePeriod.TODAY,
     val activeFilter: TransactionFilter = TransactionFilter.ALL,
@@ -99,6 +101,8 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
 
         var totalIncome = 0.0
         var totalExpense = 0.0
+        var ledgerTotalIncome = 0.0
+        var ledgerTotalExpense = 0.0
         var unreviewedCount = 0
 
         val categorySpendingMap = mutableMapOf<String, Double>()
@@ -115,6 +119,8 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
 
         val filteredTransactions = ArrayList<TransactionEntity>(allTx.size)
         val dateGroupMap = linkedMapOf<Long, MutableList<TransactionEntity>>()
+        val analyticsDateGroupMap = linkedMapOf<Long, MutableList<TransactionEntity>>()
+        var analyticsTransactionsCount = 0
 
         for (item in allTx) {
             // Count unreviewed across all time
@@ -132,29 +138,11 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
                 }
             }
 
-            // Check Timeframe filter
-            val isInTimeframe = item.timestamp >= timeframeStart
-            if (!isInTimeframe) continue
-
-            // Accumulate metrics for active timeframe
-            if (isInternalTransfer) {
-                // Internal self-transfers do NOT inflate income or expense totals
-            } else if (item.type == TransactionType.CREDIT) {
-                totalIncome += item.amount
-            } else {
-                totalExpense += item.amount
-                // Category breakdown
-                categorySpendingMap[item.category] = (categorySpendingMap[item.category] ?: 0.0) + item.amount
-                categoryCountMap[item.category] = (categoryCountMap[item.category] ?: 0) + 1
-
-                if (largestDebit == null || item.amount > largestDebit.amount) {
-                    largestDebit = item
-                }
+            // --- ALL TIME LEDGER CALCULATIONS ---
+            if (!isInternalTransfer) {
+                if (item.type == TransactionType.CREDIT) ledgerTotalIncome += item.amount
+                else ledgerTotalExpense += item.amount
             }
-            bankCountMap[item.bankName] = (bankCountMap[item.bankName] ?: 0) + 1
-
-            // Check Category filter (tap-to-filter)
-            val matchesCategory = controls.categoryFilter == null || item.category == controls.categoryFilter
 
             // Check Tab filter (All / Needs Note / Expense / Income)
             val matchesFilter = when (controls.filter) {
@@ -171,17 +159,62 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
                     item.category.contains(query, ignoreCase = true) ||
                     (item.referenceId?.contains(query, ignoreCase = true) == true)
 
-            if (matchesCategory && matchesFilter && matchesSearch) {
+            // Ledger Transaction Stream ONLY cares about filter and search (NOT timeframe, NOT category filter)
+            if (matchesFilter && matchesSearch) {
                 filteredTransactions.add(item)
-
                 val dayStart = DateGroupingUtils.getDayStartMillis(item.timestamp)
                 val listForDay = dateGroupMap.getOrPut(dayStart) { mutableListOf() }
                 listForDay.add(item)
             }
+
+            // --- INSIGHTS TIMEFRAME CALCULATIONS ---
+            val isInTimeframe = item.timestamp >= timeframeStart
+            if (!isInTimeframe) continue
+
+            if (!isInternalTransfer) {
+                if (item.type == TransactionType.CREDIT) {
+                    totalIncome += item.amount
+                } else {
+                    totalExpense += item.amount
+                    // Category breakdown (Insights only)
+                    categorySpendingMap[item.category] = (categorySpendingMap[item.category] ?: 0.0) + item.amount
+                    categoryCountMap[item.category] = (categoryCountMap[item.category] ?: 0) + 1
+
+                    if (largestDebit == null || item.amount > largestDebit.amount) {
+                        largestDebit = item
+                    }
+                }
+            }
+            // Bank breakdown (Insights only)
+            bankCountMap[item.bankName] = (bankCountMap[item.bankName] ?: 0) + 1
+            
+            // Analytics transaction stream
+            val dayStartAnalytics = DateGroupingUtils.getDayStartMillis(item.timestamp)
+            val listForDayAnalytics = analyticsDateGroupMap.getOrPut(dayStartAnalytics) { mutableListOf() }
+            listForDayAnalytics.add(item)
+            analyticsTransactionsCount++
         }
 
         // Build Date-Grouped stream
         val groupedList = dateGroupMap.map { (dayStart, dayItems) ->
+            var daySpent = 0.0
+            var dayIncome = 0.0
+            for (t in dayItems) {
+                if (t.category == ExpenseCategory.INTERNAL_TRANSFER) continue
+                if (t.type == TransactionType.DEBIT) daySpent += t.amount
+                else dayIncome += t.amount
+            }
+            DateGroupedTransactions(
+                dateLabel = DateGroupingUtils.getDateLabel(dayStart, now),
+                dayEpoch = dayStart,
+                dailySpent = daySpent,
+                dailyIncome = dayIncome,
+                transactions = dayItems
+            )
+        }
+
+        // Build Analytics Date-Grouped stream
+        val analyticsGroupedList = analyticsDateGroupMap.map { (dayStart, dayItems) ->
             var daySpent = 0.0
             var dayIncome = 0.0
             for (t in dayItems) {
@@ -239,19 +272,21 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             largestExpense = largestDebit,
             topBankSource = topBank,
             topCategory = topCategory,
-            transactionCount = filteredTransactions.size
+            transactionCount = analyticsTransactionsCount
         )
 
         DashboardUiState(
             transactions = filteredTransactions,
             rawAllTransactions = allTx,
             groupedTransactions = groupedList,
+            analyticsGroupedTransactions = analyticsGroupedList,
             categoryBreakdown = categoryItems,
             weeklyChartBars = chartBars,
             insights = insights,
             totalIncome = totalIncome,
             totalExpense = totalExpense,
             totalBalance = totalIncome - totalExpense,
+            ledgerTotalBalance = ledgerTotalIncome - ledgerTotalExpense,
             unreviewedCount = unreviewedCount,
             activeTimeframe = controls.timeframe,
             activeFilter = controls.filter,

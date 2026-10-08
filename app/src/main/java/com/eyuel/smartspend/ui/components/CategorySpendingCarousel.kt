@@ -44,7 +44,7 @@ fun CategorySpendingCarousel(
                 text = "Spending by Category",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
             )
 
             if (selectedCategory != null) {
@@ -95,11 +95,11 @@ fun CategorySpendingCarousel(
                         .clickable { onCategoryClick(item.category) },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) style.containerColor.copy(alpha = 0.9f) else Color(0xFF131B2A)
+                        containerColor = if (isSelected) style.color.copy(alpha = 0.2f) else androidx.compose.material3.MaterialTheme.colorScheme.surface
                     ),
                     border = BorderStroke(
                         width = if (isSelected) 1.5.dp else 1.dp,
-                        color = if (isSelected) style.color else Color(0xFF1E2A3F)
+                        color = if (isSelected) style.color else androidx.compose.material3.MaterialTheme.colorScheme.outline
                     )
                 ) {
                     Column(
@@ -116,7 +116,7 @@ fun CategorySpendingCarousel(
                                 modifier = Modifier
                                     .size(28.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(style.containerColor)
+                                    .background(style.color.copy(alpha = 0.15f))
                                     .border(1.dp, style.color.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -149,7 +149,7 @@ fun CategorySpendingCarousel(
                             text = item.category,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color.White,
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -161,7 +161,7 @@ fun CategorySpendingCarousel(
                             text = "${FormatUtils.formatAmount(item.totalAmount)} ETB",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFE2E8F0),
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -176,7 +176,7 @@ fun CategorySpendingCarousel(
                                 .height(3.dp)
                                 .clip(RoundedCornerShape(2.dp)),
                             color = style.color,
-                            trackColor = Color(0xFF1E293B)
+                            trackColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant
                         )
                     }
                 }

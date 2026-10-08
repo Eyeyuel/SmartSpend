@@ -42,8 +42,8 @@ fun WeeklySpendingBarChart(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF131C2E)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF223048))
+        colors = CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -56,24 +56,24 @@ fun WeeklySpendingBarChart(
                         text = "7-Day Spending Trend",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
                     )
                     Text(
                         text = "Total: ${FormatUtils.formatAmount(total7DaySpent)} ETB",
                         fontSize = 12.sp,
-                        color = Color(0xFF94A3B8)
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFF334155)
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant
                 ) {
                     Text(
                         text = "Last 7 Days",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFFCBD5E1),
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
@@ -83,8 +83,8 @@ fun WeeklySpendingBarChart(
 
             // Canvas Bar Chart
             val primaryColor = MaterialTheme.colorScheme.primary
-            val barNormalColor = Color(0xFF475569)
-            val barEmptyColor = Color(0xFF334155).copy(alpha = 0.5f)
+            val barNormalColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+            val barEmptyColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
 
             Box(
                 modifier = Modifier
@@ -134,12 +134,12 @@ fun WeeklySpendingBarChart(
                             text = bar.dayLabel,
                             fontSize = 11.sp,
                             fontWeight = if (bar.isToday) FontWeight.Bold else FontWeight.Medium,
-                            color = if (bar.isToday) MaterialTheme.colorScheme.primary else Color(0xFF94A3B8)
+                            color = if (bar.isToday) MaterialTheme.colorScheme.primary else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = bar.dateNumber,
                             fontSize = 10.sp,
-                            color = if (bar.isToday) Color.White else Color(0xFF64748B)
+                            color = if (bar.isToday) androidx.compose.material3.MaterialTheme.colorScheme.onSurface else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

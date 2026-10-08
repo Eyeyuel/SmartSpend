@@ -22,7 +22,7 @@ fun DateGroupHeader(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = Color(0xEB0B0F17), // 92% opaque background matching the scaffold
+        color = androidx.compose.material3.MaterialTheme.colorScheme.background.copy(alpha = 0.92f), // 92% opaque background
     ) {
         Row(
             modifier = Modifier
@@ -35,7 +35,7 @@ fun DateGroupHeader(
             text = dateLabel,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF94A3B8),
+            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
             letterSpacing = 0.5.sp
         )
 
@@ -46,13 +46,13 @@ fun DateGroupHeader(
             if (dailyIncome > 0) {
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = Color(0xFF09291D).copy(alpha = 0.8f)
+                    color = Color(0xFF10B981).copy(alpha = 0.15f)
                 ) {
                     Text(
                         text = "+${FormatUtils.formatAmount(dailyIncome)}",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF34D399),
+                        color = Color(0xFF10B981),
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
@@ -61,13 +61,13 @@ fun DateGroupHeader(
             if (dailySpent > 0) {
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = Color(0xFF330E1B).copy(alpha = 0.8f)
+                    color = Color(0xFFF43F5E).copy(alpha = 0.15f)
                 ) {
                     Text(
                         text = "-${FormatUtils.formatAmount(dailySpent)} ETB",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFFB7185),
+                        color = Color(0xFFF43F5E),
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
