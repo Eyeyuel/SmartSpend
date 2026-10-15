@@ -308,11 +308,23 @@ fun AnalyticsScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(bottom = 100.dp)
     ) {
-        // 1. Timeframe Selector
+        // 1. Hero Trend Chart (Macro Spending Overview: 7 Days, Weekly, Monthly, Yearly)
+        item {
+            Spacer(modifier = Modifier.height(2.dp))
+            WeeklySpendingBarChart(
+                chartData = uiState.chartData,
+                onGranularitySelected = { viewModel.setChartGranularity(it) },
+                onLoadMoreHistory = { viewModel.loadMoreChartHistory() }
+            )
+        }
+
+        // 2. Timeframe Selector (Controls Detailed Breakdown Below)
         stickyHeader {
             Surface(
                 color = androidx.compose.material3.MaterialTheme.colorScheme.background,
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp)
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
+                shadowElevation = 0.dp,
+                tonalElevation = 0.dp
             ) {
                 TimeframeSelector(
                     activeTimeframe = uiState.activeTimeframe,
@@ -321,12 +333,12 @@ fun AnalyticsScreen(
             }
         }
 
-        // 2. High-Level Net Cashflow Summary Header
+        // 3. High-Level Net Cashflow Summary Header
         item {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp),
+                    .padding(vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -405,11 +417,6 @@ fun AnalyticsScreen(
             }
         }
 
-        // 3. Trend Chart (Weekly Spending)
-        item {
-            WeeklySpendingBarChart(bars = uiState.weeklyChartBars)
-        }
-
         // 4. Smart AI Insights
         uiState.insights?.let { insights ->
             item {
@@ -423,7 +430,8 @@ fun AnalyticsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline)
+                border = BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(

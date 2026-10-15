@@ -31,3 +31,29 @@ data class SpendingInsights(
     val topCategory: String?,
     val transactionCount: Int
 )
+
+enum class ChartGranularity(val displayName: String, val avgLabel: String, val avgUnit: String) {
+    DAILY_7("7 Days", "Daily Avg", "/day"),
+    WEEKLY("Weekly", "Weekly Avg", "/wk"),
+    MONTHLY("Monthly", "Monthly Avg", "/mo"),
+    YEARLY("Yearly", "Yearly Avg", "/yr")
+}
+
+data class SpendingChartBar(
+    val id: String,
+    val primaryLabel: String,
+    val secondaryLabel: String,
+    val fullTitle: String,
+    val amount: Double,
+    val isCurrent: Boolean,
+    val timestamp: Long = 0L
+)
+
+data class SpendingChartData(
+    val granularity: ChartGranularity = ChartGranularity.DAILY_7,
+    val bars: List<SpendingChartBar> = emptyList(),
+    val totalAmount: Double = 0.0,
+    val averageAmount: Double = 0.0,
+    val maxAmount: Double = 1.0,
+    val pages: Int = 1
+)

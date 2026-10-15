@@ -57,4 +57,18 @@ object FormatUtils {
             }
         }
     }
+
+    fun formatCompactAmount(amount: Double): String {
+        if (amount <= 0.0) return "0"
+        return when {
+            amount >= 1_000_000 -> String.format(Locale.US, "%.1fM", amount / 1_000_000)
+            amount >= 10_000 -> String.format(Locale.US, "%.1fk", amount / 1_000)
+            amount >= 1_000 -> {
+                if (amount % 1_000 < 100) String.format(Locale.US, "%.0fk", amount / 1_000)
+                else String.format(Locale.US, "%.1fk", amount / 1_000)
+            }
+            amount >= 100 -> String.format(Locale.US, "%.0f", amount)
+            else -> String.format(Locale.US, "%.0f", amount)
+        }
+    }
 }

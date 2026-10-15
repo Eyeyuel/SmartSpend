@@ -29,7 +29,9 @@ fun TimeframeSelector(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         color = androidx.compose.material3.MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline)
+        border = BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline),
+        shadowElevation = 0.dp,
+        tonalElevation = 0.dp
     ) {
         Row(
             modifier = Modifier

@@ -50,7 +50,9 @@ fun SmartSpendBottomNavBar(
         Surface(
             color = androidx.compose.material3.MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(24.dp),
-            shadowElevation = 16.dp,
+            shadowElevation = 0.dp,
+            tonalElevation = 0.dp,
+            border = BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)),
             modifier = Modifier.height(60.dp).wrapContentWidth()
         ) {
             Row(

@@ -8,7 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -37,7 +37,8 @@ fun SpendingInsightsCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline)
+        border = BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -59,7 +60,7 @@ fun SpendingInsightsCard(
 
                 if (insights.largestExpense != null) {
                     InsightRow(
-                        icon = Icons.Default.TrendingUp,
+                        icon = Icons.AutoMirrored.Filled.TrendingUp,
                         iconColor = ExpenseRed,
                         title = "Peak Outflow",
                         value = "-${FormatUtils.formatAmount(insights.largestExpense.amount)} ETB (${insights.largestExpense.bankName})"

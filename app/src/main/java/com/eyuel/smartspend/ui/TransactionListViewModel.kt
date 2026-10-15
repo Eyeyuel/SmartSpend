@@ -12,8 +12,11 @@ import com.eyuel.smartspend.domain.model.ExpenseCategory
 import com.eyuel.smartspend.domain.model.TimeframePeriod
 import com.eyuel.smartspend.domain.model.TransactionType
 import com.eyuel.smartspend.ui.model.CategorySpendingItem
+import com.eyuel.smartspend.ui.model.ChartGranularity
 import com.eyuel.smartspend.ui.model.DailySpendingBar
 import com.eyuel.smartspend.ui.model.DateGroupedTransactions
+import com.eyuel.smartspend.ui.model.SpendingChartBar
+import com.eyuel.smartspend.ui.model.SpendingChartData
 import com.eyuel.smartspend.ui.model.SpendingInsights
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -34,6 +37,7 @@ data class DashboardUiState(
     val analyticsGroupedTransactions: List<DateGroupedTransactions> = emptyList(),
     val categoryBreakdown: List<CategorySpendingItem> = emptyList(),
     val weeklyChartBars: List<DailySpendingBar> = emptyList(),
+    val chartData: SpendingChartData = SpendingChartData(),
     val insights: SpendingInsights? = null,
     val totalIncome: Double = 0.0,
     val totalExpense: Double = 0.0,
@@ -58,7 +62,9 @@ private data class UiControls(
     val editing: TransactionEntity?,
     val tab: Int,
     val syncing: Boolean,
-    val syncMsg: String?
+    val syncMsg: String?,
+    val chartGranularity: ChartGranularity,
+    val chartPages: Int
 )
 
 class TransactionListViewModel(application: Application) : AndroidViewModel(application) {
@@ -74,14 +80,17 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
     private val _selectedTab = MutableStateFlow(0)
     private val _isSyncing = MutableStateFlow(false)
     private val _syncMessage = MutableStateFlow<String?>(null)
+    private val _chartGranularity = MutableStateFlow(ChartGranularity.DAILY_7)
+    private val _chartPages = MutableStateFlow(1)
 
     private val _uiControls = combine(
         combine(_activeTimeframe, _activeFilter, _selectedCategoryFilter) { t, f, c -> Triple(t, f, c) },
         combine(_searchQuery, _editingTransaction, _selectedTab) { q, e, tab -> Triple(q, e, tab) },
         _isSyncing,
-        _syncMessage
-    ) { (timeframe, filter, categoryFilter), (query, editing, tab), syncing, syncMsg ->
-        UiControls(timeframe, filter, categoryFilter, query, editing, tab, syncing, syncMsg)
+        _syncMessage,
+        combine(_chartGranularity, _chartPages) { g, p -> Pair(g, p) }
+    ) { (timeframe, filter, categoryFilter), (query, editing, tab), syncing, syncMsg, (granularity, pages) ->
+        UiControls(timeframe, filter, categoryFilter, query, editing, tab, syncing, syncMsg, granularity, pages)
     }
 
     init {
@@ -275,6 +284,8 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             transactionCount = analyticsTransactionsCount
         )
 
+        val chartData = buildSpendingChartData(allTx, controls.chartGranularity, now, controls.chartPages)
+
         DashboardUiState(
             transactions = filteredTransactions,
             rawAllTransactions = allTx,
@@ -282,6 +293,7 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             analyticsGroupedTransactions = analyticsGroupedList,
             categoryBreakdown = categoryItems,
             weeklyChartBars = chartBars,
+            chartData = chartData,
             insights = insights,
             totalIncome = totalIncome,
             totalExpense = totalExpense,
@@ -302,6 +314,17 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = DashboardUiState()
     )
+
+    fun setChartGranularity(granularity: ChartGranularity) {
+        _chartGranularity.value = granularity
+        _chartPages.value = 1
+    }
+
+    fun loadMoreChartHistory() {
+        if (_chartPages.value < 25) {
+            _chartPages.value += 1
+        }
+    }
 
     fun setTimeframe(timeframe: TimeframePeriod) {
         _activeTimeframe.value = timeframe
@@ -377,5 +400,267 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
 
     fun clearSyncMessage() {
         _syncMessage.value = null
+    }
+
+    private fun buildSpendingChartData(
+        allTx: List<TransactionEntity>,
+        granularity: ChartGranularity,
+        now: Long,
+        pages: Int = 1
+    ): SpendingChartData {
+        val debits = allTx.filter { it.type == TransactionType.DEBIT && it.category != ExpenseCategory.INTERNAL_TRANSFER }
+        val earliestTxTimestamp = debits.minOfOrNull { it.timestamp }
+
+        val dayOfWeekFormat = SimpleDateFormat("EEE", Locale.getDefault())
+        val dayOfMonthFormat = SimpleDateFormat("d", Locale.getDefault())
+        val fullDateFormat = SimpleDateFormat("EEEE, dd MMM yyyy", Locale.getDefault())
+        val weekRangeFormat = SimpleDateFormat("d MMM", Locale.getDefault())
+        val monthShortFormat = SimpleDateFormat("MMM", Locale.getDefault())
+        val monthYearFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+
+        val bars: List<SpendingChartBar>
+        val recentCount: Int
+
+        when (granularity) {
+            ChartGranularity.DAILY_7 -> {
+                recentCount = 7
+                val debitsByDay = mutableMapOf<Long, Double>()
+                for (tx in debits) {
+                    val dayStart = DateGroupingUtils.getDayStartMillis(tx.timestamp)
+                    debitsByDay[dayStart] = (debitsByDay[dayStart] ?: 0.0) + tx.amount
+                }
+
+                val todayStart = DateGroupingUtils.getDayStartMillis(now)
+                // Initial chunk: 14 days, prepends +14 days per page on scroll
+                val daysToLoad = 14 * pages
+                val targetEarliestDay = todayStart - ((daysToLoad - 1) * 24 * 60 * 60 * 1000L)
+                val actualEarliest = if (earliestTxTimestamp != null) {
+                    maxOf(DateGroupingUtils.getDayStartMillis(earliestTxTimestamp), targetEarliestDay)
+                } else {
+                    targetEarliestDay
+                }
+
+                val resultList = mutableListOf<SpendingChartBar>()
+                val cal = Calendar.getInstance().apply { timeInMillis = actualEarliest }
+                while (cal.timeInMillis <= todayStart) {
+                    val dayStart = cal.timeInMillis
+                    val amount = debitsByDay[dayStart] ?: 0.0
+                    val isToday = dayStart == todayStart
+                    val date = Date(dayStart)
+
+                    resultList.add(
+                        SpendingChartBar(
+                            id = "day_$dayStart",
+                            primaryLabel = dayOfWeekFormat.format(date),
+                            secondaryLabel = dayOfMonthFormat.format(date),
+                            fullTitle = fullDateFormat.format(date),
+                            amount = amount,
+                            isCurrent = isToday,
+                            timestamp = dayStart
+                        )
+                    )
+                    cal.add(Calendar.DAY_OF_YEAR, 1)
+                }
+                bars = resultList
+            }
+
+            ChartGranularity.WEEKLY -> {
+                recentCount = 6
+                val calNow = Calendar.getInstance().apply {
+                    timeInMillis = now
+                    firstDayOfWeek = Calendar.MONDAY
+                    set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                val currentWeekMonday = calNow.timeInMillis
+
+                // Initial chunk: 8 weeks, prepends +8 weeks per page on scroll
+                val weeksToLoad = 8 * pages
+                val targetEarliestWeek = currentWeekMonday - ((weeksToLoad - 1) * 7 * 24 * 60 * 60 * 1000L)
+                val actualEarliestWeek = if (earliestTxTimestamp != null) {
+                    val calEarly = Calendar.getInstance().apply {
+                        timeInMillis = earliestTxTimestamp
+                        firstDayOfWeek = Calendar.MONDAY
+                        set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    maxOf(calEarly.timeInMillis, targetEarliestWeek)
+                } else {
+                    targetEarliestWeek
+                }
+
+                val resultList = mutableListOf<SpendingChartBar>()
+                val cal = Calendar.getInstance().apply {
+                    timeInMillis = actualEarliestWeek
+                    firstDayOfWeek = Calendar.MONDAY
+                }
+                while (cal.timeInMillis <= currentWeekMonday) {
+                    val weekStart = cal.timeInMillis
+                    val calEnd = Calendar.getInstance().apply {
+                        timeInMillis = weekStart
+                        add(Calendar.DAY_OF_YEAR, 7)
+                    }
+                    val weekEnd = calEnd.timeInMillis
+                    val amount = debits.filter { it.timestamp in weekStart until weekEnd }.sumOf { it.amount }
+                    val isCurrent = weekStart == currentWeekMonday
+
+                    val startDate = Date(weekStart)
+                    val endDate = Date(weekEnd - 1000L)
+                    val primary = if (isCurrent) "This Wk" else weekRangeFormat.format(startDate)
+                    val secondary = if (isCurrent) weekRangeFormat.format(startDate) else ""
+                    val fullTitle = "Week: ${weekRangeFormat.format(startDate)} – ${SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(endDate)}"
+
+                    resultList.add(
+                        SpendingChartBar(
+                            id = "week_$weekStart",
+                            primaryLabel = primary,
+                            secondaryLabel = secondary,
+                            fullTitle = fullTitle,
+                            amount = amount,
+                            isCurrent = isCurrent,
+                            timestamp = weekStart
+                        )
+                    )
+                    cal.add(Calendar.DAY_OF_YEAR, 7)
+                }
+                bars = resultList
+            }
+
+            ChartGranularity.MONTHLY -> {
+                recentCount = 6
+                val calNow = Calendar.getInstance().apply {
+                    timeInMillis = now
+                    set(Calendar.DAY_OF_MONTH, 1)
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                val currentMonthStart = calNow.timeInMillis
+
+                // Initial chunk: 6 months, prepends +6 months per page on scroll
+                val monthsToLoad = 6 * pages
+                val calTargetEarly = Calendar.getInstance().apply {
+                    timeInMillis = currentMonthStart
+                    add(Calendar.MONTH, -(monthsToLoad - 1))
+                }
+                val actualEarliestMonth = if (earliestTxTimestamp != null) {
+                    val calEarly = Calendar.getInstance().apply {
+                        timeInMillis = earliestTxTimestamp
+                        set(Calendar.DAY_OF_MONTH, 1)
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    maxOf(calEarly.timeInMillis, calTargetEarly.timeInMillis)
+                } else {
+                    calTargetEarly.timeInMillis
+                }
+
+                val resultList = mutableListOf<SpendingChartBar>()
+                val cal = Calendar.getInstance().apply { timeInMillis = actualEarliestMonth }
+                while (cal.timeInMillis <= currentMonthStart) {
+                    val monthStart = cal.timeInMillis
+                    val calEnd = Calendar.getInstance().apply {
+                        timeInMillis = monthStart
+                        add(Calendar.MONTH, 1)
+                    }
+                    val monthEnd = calEnd.timeInMillis
+                    val amount = debits.filter { it.timestamp in monthStart until monthEnd }.sumOf { it.amount }
+                    val isCurrent = monthStart == currentMonthStart
+
+                    val date = Date(monthStart)
+                    val monthShort = monthShortFormat.format(date)
+                    val yearShort = SimpleDateFormat("yy", Locale.getDefault()).format(date)
+                    val fullTitle = monthYearFormat.format(date)
+
+                    resultList.add(
+                        SpendingChartBar(
+                            id = "month_$monthStart",
+                            primaryLabel = monthShort,
+                            secondaryLabel = "'$yearShort",
+                            fullTitle = fullTitle,
+                            amount = amount,
+                            isCurrent = isCurrent,
+                            timestamp = monthStart
+                        )
+                    )
+                    cal.add(Calendar.MONTH, 1)
+                }
+                bars = resultList
+            }
+
+            ChartGranularity.YEARLY -> {
+                recentCount = 4
+                val calNow = Calendar.getInstance().apply { timeInMillis = now }
+                val currentYear = calNow.get(Calendar.YEAR)
+
+                // Initial chunk: 4 years, prepends +4 years per page on scroll
+                val yearsToLoad = 4 * pages
+                val targetEarlyYear = currentYear - (yearsToLoad - 1)
+                val earliestYear = if (earliestTxTimestamp != null) {
+                    val calEarly = Calendar.getInstance().apply { timeInMillis = earliestTxTimestamp }
+                    maxOf(calEarly.get(Calendar.YEAR), targetEarlyYear)
+                } else {
+                    targetEarlyYear
+                }
+
+                val resultList = mutableListOf<SpendingChartBar>()
+                for (year in earliestYear..currentYear) {
+                    val calStart = Calendar.getInstance().apply {
+                        set(Calendar.YEAR, year)
+                        set(Calendar.DAY_OF_YEAR, 1)
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    val calEnd = Calendar.getInstance().apply {
+                        timeInMillis = calStart.timeInMillis
+                        add(Calendar.YEAR, 1)
+                    }
+                    val yearStart = calStart.timeInMillis
+                    val yearEnd = calEnd.timeInMillis
+                    val amount = debits.filter { it.timestamp in yearStart until yearEnd }.sumOf { it.amount }
+                    val isCurrent = year == currentYear
+
+                    resultList.add(
+                        SpendingChartBar(
+                            id = "year_$year",
+                            primaryLabel = year.toString(),
+                            secondaryLabel = "",
+                            fullTitle = "Year $year",
+                            amount = amount,
+                            isCurrent = isCurrent,
+                            timestamp = yearStart
+                        )
+                    )
+                }
+                bars = resultList
+            }
+        }
+
+        // Summary metrics computed on recent window to match visible cards exactly
+        val recentBars = bars.takeLast(recentCount)
+        val total = recentBars.sumOf { it.amount }
+        val average = if (recentBars.isNotEmpty()) total / recentBars.size else 0.0
+        // Use recent window max so bars are prominently visible and not flattened by distant historical outliers
+        val recentMax = (recentBars.maxOfOrNull { it.amount } ?: 1.0).let { if (it <= 0.0) 1.0 else it }
+
+        return SpendingChartData(
+            granularity = granularity,
+            bars = bars,
+            totalAmount = total,
+            averageAmount = average,
+            maxAmount = recentMax,
+            pages = pages
+        )
     }
 }
