@@ -10,6 +10,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -120,7 +122,7 @@ fun MainScreen(viewModel: TransactionListViewModel) {
             pagerState.animateScrollToPage(uiState.selectedTab)
         }
     }
-    var isSplashShowing by remember { mutableStateOf(true) }
+    val isSplashDismissed by viewModel.isSplashDismissed.collectAsStateWithLifecycle()
     var isBalanceVisible by remember { mutableStateOf(false) }
     var showAddCashSheet by remember { mutableStateOf(false) }
 
@@ -131,12 +133,17 @@ fun MainScreen(viewModel: TransactionListViewModel) {
         }
     }
 
-    if (isSplashShowing) {
-        com.eyuel.smartspend.ui.components.SplashScreen(
-            onSplashComplete = { isSplashShowing = false }
-        )
-    } else {
-        Scaffold(
+    Crossfade(
+        targetState = isSplashDismissed,
+        animationSpec = tween(durationMillis = 220),
+        label = "splash_crossfade"
+    ) { dismissed ->
+        if (!dismissed) {
+            com.eyuel.smartspend.ui.components.SplashScreen(
+                onSplashComplete = { viewModel.dismissSplash() }
+            )
+        } else {
+            Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {
@@ -193,8 +200,9 @@ fun MainScreen(viewModel: TransactionListViewModel) {
                 }
             }
         }
+    }
 
-        // Modal BottomSheet for Editing Description and Category
+    // Modal BottomSheet for Editing Description and Category
         uiState.editingTransaction?.let { transaction ->
             EditTransactionBottomSheet(
                 transaction = transaction,

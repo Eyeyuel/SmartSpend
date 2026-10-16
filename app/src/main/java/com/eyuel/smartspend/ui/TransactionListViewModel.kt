@@ -86,6 +86,13 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
     private val _chartGranularity = MutableStateFlow(ChartGranularity.DAILY_7)
     private val _chartPages = MutableStateFlow(1)
 
+    private val _isSplashDismissed = MutableStateFlow(false)
+    val isSplashDismissed: StateFlow<Boolean> = _isSplashDismissed.asStateFlow()
+
+    fun dismissSplash() {
+        _isSplashDismissed.value = true
+    }
+
     private val _uiControls = combine(
         combine(_activeTimeframe, _customDateRange, _activeFilter, _selectedCategoryFilter) { t, r, f, c ->
             data class TimeAndFilter(val t: TimeframePeriod, val r: Pair<Long, Long>?, val f: TransactionFilter, val c: String?)
