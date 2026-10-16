@@ -222,6 +222,16 @@ fun MainScreen(viewModel: TransactionListViewModel) {
                 onSave = { id, desc, cat ->
                     viewModel.saveDescriptionAndCategory(id, desc, cat)
                 },
+                onUpdateCash = { id, amount, type, category, description, timestamp ->
+                    viewModel.updateManualTransaction(
+                        id = id,
+                        amount = amount,
+                        type = type,
+                        category = category,
+                        description = description,
+                        timestamp = timestamp
+                    )
+                },
                 onDelete = { id ->
                     viewModel.deleteTransaction(id)
                 }

@@ -27,6 +27,14 @@ interface TransactionRepository {
         bankName: String = "Cash"
     ): Long
     suspend fun updateNoteAndCategory(id: Long, description: String, category: String)
+    suspend fun updateManualTransaction(
+        id: Long,
+        amount: Double,
+        type: TransactionType,
+        category: String,
+        description: String,
+        timestamp: Long
+    )
     suspend fun deleteTransaction(id: Long)
     suspend fun clearAll()
     fun getTotalIncome(): Flow<Double?>
@@ -218,6 +226,24 @@ class TransactionRepositoryImpl(
             description = description.trim(),
             category = category,
             isReviewed = true
+        )
+    }
+
+    override suspend fun updateManualTransaction(
+        id: Long,
+        amount: Double,
+        type: TransactionType,
+        category: String,
+        description: String,
+        timestamp: Long
+    ) {
+        transactionDao.updateManualTransactionDetails(
+            id = id,
+            amount = amount,
+            type = type,
+            category = category,
+            description = description.trim(),
+            timestamp = timestamp
         )
     }
 

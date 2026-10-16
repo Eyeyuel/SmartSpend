@@ -402,6 +402,27 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
         }
     }
 
+    fun updateManualTransaction(
+        id: Long,
+        amount: Double,
+        type: TransactionType,
+        category: String,
+        description: String,
+        timestamp: Long
+    ) {
+        viewModelScope.launch {
+            repository.updateManualTransaction(
+                id = id,
+                amount = amount,
+                type = type,
+                category = category,
+                description = description,
+                timestamp = timestamp
+            )
+            _editingTransaction.value = null
+        }
+    }
+
     fun deleteTransaction(id: Long) {
         viewModelScope.launch {
             repository.deleteTransaction(id)

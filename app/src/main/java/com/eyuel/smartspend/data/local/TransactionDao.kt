@@ -39,6 +39,16 @@ interface TransactionDao {
     @Query("UPDATE transactions SET description = :description, category = :category, isReviewed = :isReviewed WHERE id = :id")
     suspend fun updateNoteAndCategory(id: Long, description: String, category: String, isReviewed: Boolean = true)
 
+    @Query("UPDATE transactions SET amount = :amount, type = :type, category = :category, description = :description, timestamp = :timestamp, isReviewed = 1 WHERE id = :id")
+    suspend fun updateManualTransactionDetails(
+        id: Long,
+        amount: Double,
+        type: TransactionType,
+        category: String,
+        description: String,
+        timestamp: Long
+    )
+
     @Delete
     suspend fun deleteTransaction(transaction: TransactionEntity)
 
