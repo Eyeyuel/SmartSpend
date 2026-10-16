@@ -79,6 +79,15 @@ class TelebirrParser : BankParser {
     }
 
     private fun extractCounterpartyAndCategory(body: String): Pair<String?, String> {
+        // 0. Cash-Out / Agent Withdrawal / ATM
+        val isCashOut = Regex("""withdrawn|cash-out""", RegexOption.IGNORE_CASE).containsMatchIn(body)
+        if (isCashOut) {
+            val agentRegex = Regex("""from\s+(?:agent\s+)?([A-Za-z0-9\s'.,]+?)(?:\s*\([0-9*+]+\)|\s+on\s+[0-9]|\.|$)""", RegexOption.IGNORE_CASE)
+            val agent = agentRegex.find(body)?.groupValues?.getOrNull(1)?.trim()
+            val label = if (!agent.isNullOrBlank() && agent.length < 30) "Cash Out ($agent)" else "Telebirr Cash Out"
+            return Pair(label, ExpenseCategory.INTERNAL_TRANSFER)
+        }
+
         // 1. Package purchase
         val pkgRegex = Regex("""for\s+package\s+(.*?)\s+(?:purchase\s+made|purchase|on\s+[0-9])""", RegexOption.IGNORE_CASE)
         val pkgMatch = pkgRegex.find(body)

@@ -129,6 +129,12 @@ class GenericBankParser : BankParser {
     private fun extractCounterpartyAndCategory(body: String, bankName: String, type: TransactionType): Pair<String?, String> {
         val lower = body.lowercase()
 
+        // 0. ATM Cash Withdrawal
+        val isAtm = Regex("""\batm\b|cash\s+withdrawal|withdrawal\s+at\s+atm|atm\s+w/d""", RegexOption.IGNORE_CASE).containsMatchIn(body)
+        if (isAtm && type == TransactionType.DEBIT) {
+            return Pair("ATM Cash Withdrawal", ExpenseCategory.INTERNAL_TRANSFER)
+        }
+
         // 1. "to <Party>" or "from <Party>" or "by <Party>"
         val partyRegex = Regex("""(?:to|from|by)\s+([A-Za-z0-9\s&'-]+?)(?=\s+(?:on|using|with|via|Ref:|$)|[.,\n]|$)""", RegexOption.IGNORE_CASE)
         val match = partyRegex.find(body)

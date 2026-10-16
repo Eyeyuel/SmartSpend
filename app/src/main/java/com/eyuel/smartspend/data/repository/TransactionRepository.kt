@@ -7,6 +7,7 @@ import com.eyuel.smartspend.domain.model.ParsedTransaction
 import com.eyuel.smartspend.domain.model.TransactionType
 import com.eyuel.smartspend.domain.parser.ParserUtils
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 interface TransactionRepository {
     fun getAllTransactions(): Flow<List<TransactionEntity>>
@@ -17,6 +18,14 @@ interface TransactionRepository {
     suspend fun rescanAndHealTransactions(): Int
     suspend fun saveParsedTransaction(parsed: ParsedTransaction): Boolean
     suspend fun saveParsedTransactions(parsedList: List<ParsedTransaction>): Int
+    suspend fun addManualTransaction(
+        amount: Double,
+        type: TransactionType,
+        category: String,
+        description: String,
+        timestamp: Long,
+        bankName: String = "Cash"
+    ): Long
     suspend fun updateNoteAndCategory(id: Long, description: String, category: String)
     suspend fun deleteTransaction(id: Long)
     suspend fun clearAll()
@@ -174,6 +183,33 @@ class TransactionRepositoryImpl(
         } else 0
 
         return insertedCount + healedCount
+    }
+
+    override suspend fun addManualTransaction(
+        amount: Double,
+        type: TransactionType,
+        category: String,
+        description: String,
+        timestamp: Long,
+        bankName: String
+    ): Long {
+        val ref = "CASH_${timestamp}_${UUID.randomUUID().toString().take(6)}"
+        val entity = TransactionEntity(
+            referenceId = ref,
+            bankName = bankName,
+            senderAddress = "MANUAL_ENTRY",
+            amount = amount,
+            currency = "ETB",
+            type = type,
+            timestamp = timestamp,
+            balanceAfter = null,
+            accountNumber = null,
+            rawBody = "Manual Cash Entry",
+            description = description.trim(),
+            category = category,
+            isReviewed = true
+        )
+        return transactionDao.insertOrIgnore(entity)
     }
 
     override suspend fun updateNoteAndCategory(id: Long, description: String, category: String) {

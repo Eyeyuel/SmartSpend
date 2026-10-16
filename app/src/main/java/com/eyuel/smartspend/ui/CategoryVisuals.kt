@@ -86,6 +86,11 @@ object CategoryVisuals {
 
     fun getBankVisual(bankName: String): BankVisual {
         return when {
+            bankName.contains("Cash", ignoreCase = true) -> BankVisual(
+                icon = Icons.Default.Payments,
+                accentColor = Color(0xFF10B981), // Emerald 500
+                shortName = "Cash"
+            )
             bankName.contains("CBE", ignoreCase = true) || bankName.contains("Commercial Bank", ignoreCase = true) -> BankVisual(
                 icon = Icons.Default.AccountBalance,
                 accentColor = Color(0xFF0EA5E9), // Ocean Blue

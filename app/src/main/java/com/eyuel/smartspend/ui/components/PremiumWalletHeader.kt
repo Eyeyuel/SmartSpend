@@ -93,7 +93,7 @@ fun PremiumWalletHeader(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = if (isSyncing) "Syncing SMS..." else "Sync Recent",
+                    text = if (isSyncing) "Syncing..." else "Sync Recent",
                     color = if (isSyncing) Color(0xFF2AABEE) else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold

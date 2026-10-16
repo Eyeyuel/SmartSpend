@@ -45,6 +45,7 @@ data class DashboardUiState(
     val ledgerTotalBalance: Double = 0.0,
     val unreviewedCount: Int = 0,
     val activeTimeframe: TimeframePeriod = TimeframePeriod.TODAY,
+    val customDateRange: Pair<Long, Long>? = null,
     val activeFilter: TransactionFilter = TransactionFilter.ALL,
     val selectedCategoryFilter: String? = null,
     val searchQuery: String = "",
@@ -56,6 +57,7 @@ data class DashboardUiState(
 
 private data class UiControls(
     val timeframe: TimeframePeriod,
+    val customRange: Pair<Long, Long>?,
     val filter: TransactionFilter,
     val categoryFilter: String?,
     val query: String,
@@ -73,6 +75,7 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
     private val syncManager = SmsSyncManager(application, repository)
 
     private val _activeTimeframe = MutableStateFlow(TimeframePeriod.ALL_TIME)
+    private val _customDateRange = MutableStateFlow<Pair<Long, Long>?>(null)
     private val _activeFilter = MutableStateFlow(TransactionFilter.ALL)
     private val _selectedCategoryFilter = MutableStateFlow<String?>(null)
     private val _searchQuery = MutableStateFlow("")
@@ -84,13 +87,16 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
     private val _chartPages = MutableStateFlow(1)
 
     private val _uiControls = combine(
-        combine(_activeTimeframe, _activeFilter, _selectedCategoryFilter) { t, f, c -> Triple(t, f, c) },
+        combine(_activeTimeframe, _customDateRange, _activeFilter, _selectedCategoryFilter) { t, r, f, c ->
+            data class TimeAndFilter(val t: TimeframePeriod, val r: Pair<Long, Long>?, val f: TransactionFilter, val c: String?)
+            TimeAndFilter(t, r, f, c)
+        },
         combine(_searchQuery, _editingTransaction, _selectedTab) { q, e, tab -> Triple(q, e, tab) },
         _isSyncing,
         _syncMessage,
         combine(_chartGranularity, _chartPages) { g, p -> Pair(g, p) }
-    ) { (timeframe, filter, categoryFilter), (query, editing, tab), syncing, syncMsg, (granularity, pages) ->
-        UiControls(timeframe, filter, categoryFilter, query, editing, tab, syncing, syncMsg, granularity, pages)
+    ) { tf, (query, editing, tab), syncing, syncMsg, (granularity, pages) ->
+        UiControls(tf.t, tf.r, tf.f, tf.c, query, editing, tab, syncing, syncMsg, granularity, pages)
     }
 
     init {
@@ -104,7 +110,13 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
         _uiControls
     ) { allTx, controls ->
         val now = System.currentTimeMillis()
-        val timeframeStart = controls.timeframe.getStartMillis(now)
+        val (timeframeStart, timeframeEnd) = if (controls.timeframe == TimeframePeriod.CUSTOM && controls.customRange != null) {
+            val start = DateGroupingUtils.getDayStartMillis(controls.customRange.first)
+            val end = DateGroupingUtils.getDayStartMillis(controls.customRange.second) + (24 * 60 * 60 * 1000L) - 1L
+            start to end
+        } else {
+            controls.timeframe.getStartMillis(now) to Long.MAX_VALUE
+        }
         val query = controls.query.trim()
         val hasQuery = query.isNotEmpty()
 
@@ -177,7 +189,7 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             }
 
             // --- INSIGHTS TIMEFRAME CALCULATIONS ---
-            val isInTimeframe = item.timestamp >= timeframeStart
+            val isInTimeframe = item.timestamp in timeframeStart..timeframeEnd
             if (!isInTimeframe) continue
 
             if (!isInternalTransfer) {
@@ -273,6 +285,12 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             TimeframePeriod.THIS_WEEK -> 7
             TimeframePeriod.THIS_MONTH -> Calendar.getInstance().get(Calendar.DAY_OF_MONTH).coerceAtLeast(1)
             TimeframePeriod.ALL_TIME -> 30
+            TimeframePeriod.CUSTOM -> {
+                if (controls.customRange != null) {
+                    val diffMs = maxOf(0L, timeframeEnd - timeframeStart + 1000L)
+                    (diffMs / (24 * 60 * 60 * 1000L)).toInt().coerceAtLeast(1)
+                } else 1
+            }
         }
         val dailyAverage = totalExpense / daysInPeriod
 
@@ -301,6 +319,7 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             ledgerTotalBalance = ledgerTotalIncome - ledgerTotalExpense,
             unreviewedCount = unreviewedCount,
             activeTimeframe = controls.timeframe,
+            customDateRange = controls.customRange,
             activeFilter = controls.filter,
             selectedCategoryFilter = controls.categoryFilter,
             searchQuery = controls.query,
@@ -327,7 +346,22 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
     }
 
     fun setTimeframe(timeframe: TimeframePeriod) {
+        if (timeframe != TimeframePeriod.CUSTOM) {
+            _customDateRange.value = null
+        }
         _activeTimeframe.value = timeframe
+    }
+
+    fun setCustomDateRange(startMillis: Long, endMillis: Long) {
+        val start = minOf(startMillis, endMillis)
+        val end = maxOf(startMillis, endMillis)
+        _customDateRange.value = start to end
+        _activeTimeframe.value = TimeframePeriod.CUSTOM
+    }
+
+    fun clearCustomDateRange() {
+        _customDateRange.value = null
+        _activeTimeframe.value = TimeframePeriod.ALL_TIME
     }
 
     fun setFilter(filter: TransactionFilter) {
@@ -367,6 +401,25 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             if (_editingTransaction.value?.id == id) {
                 _editingTransaction.value = null
             }
+        }
+    }
+
+    fun addCashTransaction(
+        amount: Double,
+        type: TransactionType,
+        category: String,
+        description: String,
+        timestamp: Long
+    ) {
+        viewModelScope.launch {
+            repository.addManualTransaction(
+                amount = amount,
+                type = type,
+                category = category,
+                description = description,
+                timestamp = timestamp,
+                bankName = "Cash"
+            )
         }
     }
 

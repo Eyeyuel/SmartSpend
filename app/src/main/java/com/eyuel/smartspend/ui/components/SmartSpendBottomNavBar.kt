@@ -14,6 +14,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -37,6 +39,7 @@ import androidx.compose.ui.unit.sp
 fun SmartSpendBottomNavBar(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
+    onAddCashClick: () -> Unit,
     unreviewedCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
@@ -56,7 +59,7 @@ fun SmartSpendBottomNavBar(
             modifier = Modifier.height(60.dp).wrapContentWidth()
         ) {
             Row(
-                modifier = Modifier.fillMaxHeight().padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxHeight().padding(horizontal = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -66,7 +69,12 @@ fun SmartSpendBottomNavBar(
                     isSelected = selectedTab == 0,
                     badgeCount = unreviewedCount,
                     onClick = { onTabSelected(0) },
-                    modifier = Modifier.wrapContentWidth().padding(horizontal = 12.dp)
+                    modifier = Modifier.wrapContentWidth().padding(horizontal = 8.dp)
+                )
+
+                CenterNavActionButton(
+                    onClick = onAddCashClick,
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
 
                 NavBarItem(
@@ -75,10 +83,48 @@ fun SmartSpendBottomNavBar(
                     isSelected = selectedTab == 1,
                     badgeCount = 0,
                     onClick = { onTabSelected(1) },
-                    modifier = Modifier.wrapContentWidth().padding(horizontal = 12.dp)
+                    modifier = Modifier.wrapContentWidth().padding(horizontal = 8.dp)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun CenterNavActionButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.88f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "center_btn_scale"
+    )
+
+    Box(
+        modifier = modifier
+            .scale(scale)
+            .size(42.dp)
+            .clip(CircleShape)
+            .background(Color(0xFF10B981))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(bounded = true, color = Color.White),
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = "Add Cash Transaction",
+            tint = Color.White,
+            modifier = Modifier.size(24.dp)
+        )
     }
 }
 

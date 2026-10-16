@@ -88,12 +88,20 @@ class CbeParser : BankParser {
     private fun extractCounterpartyAndCategory(body: String, type: TransactionType): Pair<String?, String> {
         val lower = body.lowercase()
 
-        // 0. Internal Wallet Transfers (Telebirr, CBE Birr)
+        // 0. Internal Wallet Transfers (Telebirr, CBE Birr) & ATM Cash Withdrawals
         if (lower.contains("telebirr")) {
             return Pair("Telebirr Transfer", ExpenseCategory.INTERNAL_TRANSFER)
         }
         if (lower.contains("cbe birr")) {
             return Pair("CBE Birr Transfer", ExpenseCategory.INTERNAL_TRANSFER)
+        }
+
+        val isAtmWithdrawal = Regex("""\batm\b|cash\s+withdrawal|withdrawal\s+at\s+atm|atm\s+w/d""", RegexOption.IGNORE_CASE).containsMatchIn(body)
+        if (isAtmWithdrawal && type == TransactionType.DEBIT) {
+            val atmLocationRegex = Regex("""(?:at\s+atm|atm)\s+([A-Za-z0-9\s._-]+?)(?=\s+on|\s*\(|\.|$)""", RegexOption.IGNORE_CASE)
+            val loc = atmLocationRegex.find(body)?.groupValues?.getOrNull(1)?.trim()
+            val label = if (!loc.isNullOrBlank() && loc.length < 30) "ATM ($loc)" else "ATM Cash Withdrawal"
+            return Pair(label, ExpenseCategory.INTERNAL_TRANSFER)
         }
 
         // 1. P2P transfers: "to account 1**9667 (Alemtsehay Birhane Kahsay)" or "from account 1**7426 (Minilik Belachew Balkideru)"

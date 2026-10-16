@@ -6,7 +6,8 @@ enum class TimeframePeriod(val displayName: String) {
     TODAY("Today"),
     THIS_WEEK("This Week"),
     THIS_MONTH("This Month"),
-    ALL_TIME("All Time");
+    ALL_TIME("All Time"),
+    CUSTOM("Custom");
 
     fun getStartMillis(nowMillis: Long = System.currentTimeMillis()): Long {
         val calendar = Calendar.getInstance().apply {
@@ -38,7 +39,7 @@ enum class TimeframePeriod(val displayName: String) {
                 calendar.set(Calendar.MILLISECOND, 0)
                 calendar.timeInMillis
             }
-            ALL_TIME -> 0L
+            ALL_TIME, CUSTOM -> 0L
         }
     }
 }

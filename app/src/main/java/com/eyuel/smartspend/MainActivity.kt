@@ -23,6 +23,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Clear
@@ -121,6 +122,7 @@ fun MainScreen(viewModel: TransactionListViewModel) {
     }
     var isSplashShowing by remember { mutableStateOf(true) }
     var isBalanceVisible by remember { mutableStateOf(false) }
+    var showAddCashSheet by remember { mutableStateOf(false) }
 
     // Sync Pager -> BottomNav
     LaunchedEffect(pagerState.currentPage) {
@@ -136,75 +138,93 @@ fun MainScreen(viewModel: TransactionListViewModel) {
     } else {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            SmartSpendBottomNavBar(
-                selectedTab = uiState.selectedTab,
-                onTabSelected = { tab -> 
-                    viewModel.setSelectedTab(tab)
-                    coroutineScope.launch { pagerState.animateScrollToPage(tab) }
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            bottomBar = {
+                SmartSpendBottomNavBar(
+                    selectedTab = uiState.selectedTab,
+                    onTabSelected = { tab -> 
+                        viewModel.setSelectedTab(tab)
+                        coroutineScope.launch { pagerState.animateScrollToPage(tab) }
+                    },
+                    onAddCashClick = { showAddCashSheet = true },
+                    unreviewedCount = uiState.unreviewedCount
+                )
+            }
+        ) { innerPadding ->
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = innerPadding.calculateTopPadding())
+            ) { page ->
+                when (page) {
+                    0 -> {
+                        // TAB 0: LEDGER & REVIEW SCREEN
+                        LedgerScreen(
+                            uiState = uiState,
+                            isBalanceVisible = isBalanceVisible,
+                            onToggleVisibility = { isBalanceVisible = !isBalanceVisible },
+                            hasSmsPermissions = hasSmsPermissions,
+                            viewModel = viewModel,
+                            onRequestPermissions = {
+                                val perms = mutableListOf(
+                                    Manifest.permission.RECEIVE_SMS,
+                                    Manifest.permission.READ_SMS
+                                )
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    perms.add(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                                permissionLauncher.launch(perms.toTypedArray())
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    1 -> {
+                        // TAB 1: ANALYTICS & INTELLIGENCE SCREEN
+                        AnalyticsScreen(
+                            uiState = uiState,
+                            isBalanceVisible = isBalanceVisible,
+                            onToggleVisibility = { isBalanceVisible = !isBalanceVisible },
+                            onExportCsv = { viewModel.exportTransactionsCsv(context) },
+                            viewModel = viewModel,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+            }
+        }
+
+        // Modal BottomSheet for Editing Description and Category
+        uiState.editingTransaction?.let { transaction ->
+            EditTransactionBottomSheet(
+                transaction = transaction,
+                onDismiss = { viewModel.closeEdit() },
+                onSave = { id, desc, cat ->
+                    viewModel.saveDescriptionAndCategory(id, desc, cat)
                 },
-                unreviewedCount = uiState.unreviewedCount
+                onDelete = { id ->
+                    viewModel.deleteTransaction(id)
+                }
             )
         }
-    ) { innerPadding ->
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = innerPadding.calculateTopPadding())
-        ) { page ->
-            when (page) {
-                0 -> {
-                    // TAB 0: LEDGER & REVIEW SCREEN
-                    LedgerScreen(
-                        uiState = uiState,
-                        isBalanceVisible = isBalanceVisible,
-                        onToggleVisibility = { isBalanceVisible = !isBalanceVisible },
-                        hasSmsPermissions = hasSmsPermissions,
-                        viewModel = viewModel,
-                        onRequestPermissions = {
-                            val perms = mutableListOf(
-                                Manifest.permission.RECEIVE_SMS,
-                                Manifest.permission.READ_SMS
-                            )
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                perms.add(Manifest.permission.POST_NOTIFICATIONS)
-                            }
-                            permissionLauncher.launch(perms.toTypedArray())
-                        },
-                        modifier = Modifier.fillMaxSize()
+
+        // Modal BottomSheet for Adding Cash Transaction
+        if (showAddCashSheet) {
+            AddCashTransactionBottomSheet(
+                onDismiss = { showAddCashSheet = false },
+                onSave = { amount, type, category, description, timestamp ->
+                    viewModel.addCashTransaction(
+                        amount = amount,
+                        type = type,
+                        category = category,
+                        description = description,
+                        timestamp = timestamp
                     )
+                    showAddCashSheet = false
                 }
-                1 -> {
-                    // TAB 1: ANALYTICS & INTELLIGENCE SCREEN
-                    AnalyticsScreen(
-                        uiState = uiState,
-                        isBalanceVisible = isBalanceVisible,
-                        onToggleVisibility = { isBalanceVisible = !isBalanceVisible },
-                        onExportCsv = { viewModel.exportTransactionsCsv(context) },
-                        viewModel = viewModel,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
+            )
         }
     }
-
-    // Modal BottomSheet for Editing Description and Category
-    uiState.editingTransaction?.let { transaction ->
-        EditTransactionBottomSheet(
-            transaction = transaction,
-            onDismiss = { viewModel.closeEdit() },
-            onSave = { id, desc, cat ->
-                viewModel.saveDescriptionAndCategory(id, desc, cat)
-            },
-            onDelete = { id ->
-                viewModel.deleteTransaction(id)
-            }
-        )
-    }
-}
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -303,6 +323,8 @@ fun AnalyticsScreen(
     onExportCsv: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showDateRangePicker by remember { mutableStateOf(false) }
+
     LazyColumn(
         modifier = modifier.padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -328,7 +350,10 @@ fun AnalyticsScreen(
             ) {
                 TimeframeSelector(
                     activeTimeframe = uiState.activeTimeframe,
-                    onTimeframeSelected = { viewModel.setTimeframe(it) }
+                    customDateRange = uiState.customDateRange,
+                    onTimeframeSelected = { viewModel.setTimeframe(it) },
+                    onOpenCustomDatePicker = { showDateRangePicker = true },
+                    onClearCustomDateRange = { viewModel.clearCustomDateRange() }
                 )
             }
         }
@@ -560,6 +585,18 @@ fun AnalyticsScreen(
                 }
             }
         }
+    }
+
+    if (showDateRangePicker) {
+        DateRangePickerBottomSheet(
+            initialStartDateMillis = uiState.customDateRange?.first,
+            initialEndDateMillis = uiState.customDateRange?.second,
+            onApplyRange = { start, end ->
+                viewModel.setCustomDateRange(start, end)
+                showDateRangePicker = false
+            },
+            onDismiss = { showDateRangePicker = false }
+        )
     }
 }
 

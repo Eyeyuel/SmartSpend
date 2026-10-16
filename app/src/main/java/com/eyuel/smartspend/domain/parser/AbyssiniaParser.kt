@@ -73,6 +73,12 @@ class AbyssiniaParser : BankParser {
             return Pair("Telebirr Transfer", ExpenseCategory.INTERNAL_TRANSFER)
         }
 
+        // ATM Cash Withdrawal
+        val isAtm = Regex("""\batm\b|cash\s+withdrawal|withdrawal\s+at\s+atm|atm\s+w/d""", RegexOption.IGNORE_CASE).containsMatchIn(body)
+        if (isAtm && type == TransactionType.DEBIT) {
+            return Pair("ATM Cash Withdrawal", ExpenseCategory.INTERNAL_TRANSFER)
+        }
+
         // 1. "credited with ETB ... by <Person>."
         val byRegex = Regex("""by\s+([A-Za-z0-9\s.,]+?)(?=\.\s+Available|\.$)""", RegexOption.IGNORE_CASE)
         val byMatch = byRegex.find(body)
