@@ -15,6 +15,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
@@ -41,17 +43,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.text.style.TextAlign
 import com.eyuel.smartspend.domain.model.TimeframePeriod
 import com.eyuel.smartspend.ui.DashboardUiState
 import com.eyuel.smartspend.ui.FormatUtils
 import com.eyuel.smartspend.ui.TransactionFilter
 import com.eyuel.smartspend.ui.TransactionListViewModel
 import com.eyuel.smartspend.ui.components.*
+import com.eyuel.smartspend.ui.model.CashflowGranularity
 import com.eyuel.smartspend.ui.theme.IncomeGreen
 import com.eyuel.smartspend.ui.theme.SmartSpendTheme
 import kotlinx.coroutines.launch
@@ -115,8 +121,11 @@ fun MainScreen(viewModel: TransactionListViewModel) {
         }
     }
 
+    val hapticFeedback = LocalHapticFeedback.current
+
     LaunchedEffect(uiState.syncMessage) {
         uiState.syncMessage?.let { msg ->
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
             snackbarHostState.showSnackbar(msg)
             viewModel.clearSyncMessage()
         }
@@ -137,6 +146,8 @@ fun MainScreen(viewModel: TransactionListViewModel) {
     val isSplashDismissed by viewModel.isSplashDismissed.collectAsStateWithLifecycle()
     var isBalanceVisible by remember { mutableStateOf(false) }
     var showAddCashSheet by remember { mutableStateOf(false) }
+    var showCashflowExplorer by remember { mutableStateOf(false) }
+    var cashflowExplorerGranularity by remember { mutableStateOf(CashflowGranularity.DAILY) }
 
     // Sync Pager -> BottomNav
     LaunchedEffect(pagerState.currentPage) {
@@ -205,6 +216,10 @@ fun MainScreen(viewModel: TransactionListViewModel) {
                             isBalanceVisible = isBalanceVisible,
                             onToggleVisibility = { isBalanceVisible = !isBalanceVisible },
                             onExportCsv = { viewModel.exportTransactionsCsv(context) },
+                            onOpenCashflowExplorer = { gran ->
+                                cashflowExplorerGranularity = gran
+                                showCashflowExplorer = true
+                            },
                             viewModel = viewModel,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -251,6 +266,18 @@ fun MainScreen(viewModel: TransactionListViewModel) {
                         timestamp = timestamp
                     )
                     showAddCashSheet = false
+                }
+            )
+        }
+
+        // Full-Screen Cashflow Explorer Modal (Dual Inflow vs Outflow)
+        if (showCashflowExplorer) {
+            com.eyuel.smartspend.ui.components.CashflowExplorerModal(
+                allTransactions = uiState.rawAllTransactions,
+                initialGranularity = cashflowExplorerGranularity,
+                onDismiss = { showCashflowExplorer = false },
+                onTransactionClick = { transaction ->
+                    viewModel.openEdit(transaction)
                 }
             )
         }
@@ -351,6 +378,7 @@ fun AnalyticsScreen(
     onToggleVisibility: () -> Unit,
     viewModel: TransactionListViewModel,
     onExportCsv: () -> Unit,
+    onOpenCashflowExplorer: (CashflowGranularity) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showDateRangePicker by remember { mutableStateOf(false) }
@@ -368,6 +396,114 @@ fun AnalyticsScreen(
                 onGranularitySelected = { viewModel.setChartGranularity(it) },
                 onLoadMoreHistory = { viewModel.loadMoreChartHistory() }
             )
+        }
+
+        // 2. Cashflow Explorer (Dual Income vs Expense Analyzer)
+        item {
+            Card(
+                onClick = { onOpenCashflowExplorer(CashflowGranularity.DAILY) },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFF2AABEE).copy(alpha = 0.12f))
+                                    .border(
+                                        1.dp,
+                                        Color(0xFF2AABEE).copy(alpha = 0.25f),
+                                        RoundedCornerShape(12.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Insights,
+                                    contentDescription = null,
+                                    tint = Color(0xFF2AABEE),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Cashflow Explorer",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Dual Inflow vs Outflow Analyzer",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                                    CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = "Open Cashflow Explorer",
+                                tint = Color(0xFF2AABEE),
+                                modifier = Modifier.size(15.dp)
+                            )
+                        }
+                    }
+
+                    // Granularity shortcuts row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CashflowGranularity.entries.forEach { gran ->
+                            Surface(
+                                onClick = { onOpenCashflowExplorer(gran) },
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = gran.title,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // 2. Timeframe Selector (Controls Detailed Breakdown Below)

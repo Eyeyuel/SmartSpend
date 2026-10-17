@@ -37,6 +37,23 @@ class SmsSyncManager(
                 "${Telephony.Sms.ADDRESS} = '8397' OR " +
                 "${Telephony.Sms.ADDRESS} LIKE '%awash%' OR " +
                 "${Telephony.Sms.ADDRESS} LIKE '%dashen%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%wegagen%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%coop%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%oromia%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%hibret%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%united%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%zemen%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%siinqee%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%sinqee%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%enat%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%berhan%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%bunna%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%lion%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%anbessa%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%amhara%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%global%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%hijra%' OR " +
+                "${Telephony.Sms.ADDRESS} LIKE '%zamzam%' OR " +
                 "${Telephony.Sms.ADDRESS} LIKE '%bank%' OR " +
                 "${Telephony.Sms.BODY} LIKE '%debited%' OR " +
                 "${Telephony.Sms.BODY} LIKE '%credited%' OR " +

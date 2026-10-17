@@ -78,7 +78,7 @@ fun PremiumWalletHeader(
             modifier = Modifier
                 .clip(RoundedCornerShape(20.dp))
                 .background(androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant)
-                .clickable { onSyncClick() }
+                .clickable(enabled = !isSyncing) { onSyncClick() }
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
         ) {

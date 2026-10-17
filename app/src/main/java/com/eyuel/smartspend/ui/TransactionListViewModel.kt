@@ -133,6 +133,9 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
         var ledgerTotalExpense = 0.0
         var unreviewedCount = 0
 
+        val latestBankBalanceMap = mutableMapOf<String, Pair<Long, Double>>()
+        var netCashBalance = 0.0
+
         val categorySpendingMap = mutableMapOf<String, Double>()
         val categoryCountMap = mutableMapOf<String, Int>()
         val bankCountMap = mutableMapOf<String, Int>()
@@ -167,6 +170,22 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             }
 
             // --- ALL TIME LEDGER CALCULATIONS ---
+            val isCash = item.bankName.equals("Cash", ignoreCase = true) ||
+                    item.senderAddress.equals("Manual Entry", ignoreCase = true) ||
+                    item.senderAddress.equals("MANUAL_ENTRY", ignoreCase = true) ||
+                    item.referenceId?.startsWith("CASH_") == true
+
+            if (isCash) {
+                if (item.type == TransactionType.CREDIT) netCashBalance += item.amount
+                else netCashBalance -= item.amount
+            } else if (item.balanceAfter != null) {
+                val bankKey = item.bankName.trim().uppercase()
+                val current = latestBankBalanceMap[bankKey]
+                if (current == null || item.timestamp > current.first) {
+                    latestBankBalanceMap[bankKey] = Pair(item.timestamp, item.balanceAfter)
+                }
+            }
+
             if (!isInternalTransfer) {
                 if (item.type == TransactionType.CREDIT) ledgerTotalIncome += item.amount
                 else ledgerTotalExpense += item.amount
@@ -222,6 +241,18 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             listForDayAnalytics.add(item)
             analyticsTransactionsCount++
         }
+
+        val computedLedgerBalance = if (latestBankBalanceMap.isNotEmpty()) {
+            latestBankBalanceMap.values.sumOf { it.second } + netCashBalance
+        } else {
+            ledgerTotalIncome - ledgerTotalExpense
+        }
+
+        android.util.Log.i("SmartSpendBalance", "=== BALANCE BREAKDOWN ===")
+        for ((bank, pair) in latestBankBalanceMap) {
+            android.util.Log.i("SmartSpendBalance", "Bank [$bank]: balanceAfter = ${pair.second}, timestamp = ${pair.first}")
+        }
+        android.util.Log.i("SmartSpendBalance", "Net Cash: $netCashBalance, Computed: $computedLedgerBalance, TotalIncome: $ledgerTotalIncome, TotalExpense: $ledgerTotalExpense")
 
         // Build Date-Grouped stream
         val groupedList = dateGroupMap.map { (dayStart, dayItems) ->
@@ -323,7 +354,7 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             totalIncome = totalIncome,
             totalExpense = totalExpense,
             totalBalance = totalIncome - totalExpense,
-            ledgerTotalBalance = ledgerTotalIncome - ledgerTotalExpense,
+            ledgerTotalBalance = computedLedgerBalance,
             unreviewedCount = unreviewedCount,
             activeTimeframe = controls.timeframe,
             customDateRange = controls.customRange,
@@ -452,9 +483,9 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
     }
 
     fun syncHistoricalSms() {
+        if (_isSyncing.value) return
         viewModelScope.launch {
             _isSyncing.value = true
-            _syncMessage.value = "Scanning inbox for banking SMS..."
             val result = syncManager.syncInbox(maxDaysBack = 180)
             _isSyncing.value = false
             _syncMessage.value = if (result.importedCount > 0) {
