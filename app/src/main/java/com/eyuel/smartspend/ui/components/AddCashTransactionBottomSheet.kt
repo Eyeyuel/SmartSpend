@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eyuel.smartspend.domain.model.ExpenseCategory
+import com.eyuel.smartspend.domain.model.IncomeCategory
 import com.eyuel.smartspend.domain.model.TransactionType
 import com.eyuel.smartspend.ui.CategoryVisuals
 import com.eyuel.smartspend.ui.FormatUtils
@@ -57,9 +58,9 @@ fun AddCashTransactionBottomSheet(
 
     // Switch default category when toggling type
     LaunchedEffect(transactionType) {
-        if (transactionType == TransactionType.CREDIT && selectedCategory == ExpenseCategory.FOOD_DINING) {
-            selectedCategory = ExpenseCategory.SALARY_INCOME
-        } else if (transactionType == TransactionType.DEBIT && selectedCategory == ExpenseCategory.SALARY_INCOME) {
+        if (transactionType == TransactionType.CREDIT && (selectedCategory in ExpenseCategory.allExpenseCategories || selectedCategory == ExpenseCategory.FOOD_DINING)) {
+            selectedCategory = IncomeCategory.SALARY
+        } else if (transactionType == TransactionType.DEBIT && (selectedCategory in IncomeCategory.allCategories || selectedCategory == ExpenseCategory.SALARY_INCOME)) {
             selectedCategory = ExpenseCategory.FOOD_DINING
         }
     }
@@ -67,22 +68,13 @@ fun AddCashTransactionBottomSheet(
     val parsedAmount = rawAmount.toDoubleOrNull() ?: 0.0
     val isSaveEnabled = parsedAmount > 0.0
 
-    // Exact same categories as the SMS transaction edit bottom sheet
-    val orderedCategories = remember(selectedCategory) {
-        val baseOrder = listOf(
-            ExpenseCategory.TRANSPORTATION,
-            ExpenseCategory.FOOD_DINING,
-            ExpenseCategory.GROCERIES,
-            ExpenseCategory.BILLS_UTILITIES,
-            ExpenseCategory.SHOPPING,
-            ExpenseCategory.TRANSFER,
-            ExpenseCategory.INTERNAL_TRANSFER,
-            ExpenseCategory.SALARY_INCOME,
-            ExpenseCategory.HEALTHCARE,
-            ExpenseCategory.ENTERTAINMENT,
-            ExpenseCategory.OTHER,
-            ExpenseCategory.UNCATEGORIZED
-        )
+    // Context-aware categories matching transaction type
+    val orderedCategories = remember(selectedCategory, isExpense) {
+        val baseOrder = if (isExpense) {
+            ExpenseCategory.allExpenseCategories
+        } else {
+            IncomeCategory.allCategories
+        }
         if (selectedCategory.isNotBlank() && selectedCategory != ExpenseCategory.UNCATEGORIZED) {
             listOf(selectedCategory) + baseOrder.filter { it != selectedCategory }
         } else {
@@ -100,9 +92,11 @@ fun AddCashTransactionBottomSheet(
         )
     } else {
         listOf(
-            "💵 Cash Received" to ExpenseCategory.SALARY_INCOME,
-            "🤝 Repayment" to ExpenseCategory.TRANSFER,
-            "🎁 Gift" to ExpenseCategory.OTHER
+            "💰 Salary" to IncomeCategory.SALARY,
+            "🏬 Business" to IncomeCategory.BUSINESS,
+            "💼 Freelance" to IncomeCategory.FREELANCE,
+            "📥 Received" to IncomeCategory.TRANSFER,
+            "🎁 Gift" to IncomeCategory.GIFT
         )
     }
 

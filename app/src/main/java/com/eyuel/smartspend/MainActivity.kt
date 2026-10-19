@@ -229,26 +229,14 @@ fun MainScreen(viewModel: TransactionListViewModel) {
         }
     }
 
-    // Modal BottomSheet for Editing Description and Category
-        uiState.editingTransaction?.let { transaction ->
-            EditTransactionBottomSheet(
-                transaction = transaction,
-                onDismiss = { viewModel.closeEdit() },
-                onSave = { id, desc, cat ->
-                    viewModel.saveDescriptionAndCategory(id, desc, cat)
-                },
-                onUpdateCash = { id, amount, type, category, description, timestamp ->
-                    viewModel.updateManualTransaction(
-                        id = id,
-                        amount = amount,
-                        type = type,
-                        category = category,
-                        description = description,
-                        timestamp = timestamp
-                    )
-                },
-                onDelete = { id ->
-                    viewModel.deleteTransaction(id)
+        // Full-Screen Cashflow Explorer Modal (Dual Inflow vs Outflow)
+        if (showCashflowExplorer) {
+            com.eyuel.smartspend.ui.components.CashflowExplorerModal(
+                allTransactions = uiState.rawAllTransactions,
+                initialGranularity = cashflowExplorerGranularity,
+                onDismiss = { showCashflowExplorer = false },
+                onTransactionClick = { transaction ->
+                    viewModel.openEdit(transaction)
                 }
             )
         }
@@ -270,14 +258,26 @@ fun MainScreen(viewModel: TransactionListViewModel) {
             )
         }
 
-        // Full-Screen Cashflow Explorer Modal (Dual Inflow vs Outflow)
-        if (showCashflowExplorer) {
-            com.eyuel.smartspend.ui.components.CashflowExplorerModal(
-                allTransactions = uiState.rawAllTransactions,
-                initialGranularity = cashflowExplorerGranularity,
-                onDismiss = { showCashflowExplorer = false },
-                onTransactionClick = { transaction ->
-                    viewModel.openEdit(transaction)
+        // Modal BottomSheet for Editing Description and Category
+        uiState.editingTransaction?.let { transaction ->
+            EditTransactionBottomSheet(
+                transaction = transaction,
+                onDismiss = { viewModel.closeEdit() },
+                onSave = { id, desc, cat ->
+                    viewModel.saveDescriptionAndCategory(id, desc, cat)
+                },
+                onUpdateCash = { id, amount, type, category, description, timestamp ->
+                    viewModel.updateManualTransaction(
+                        id = id,
+                        amount = amount,
+                        type = type,
+                        category = category,
+                        description = description,
+                        timestamp = timestamp
+                    )
+                },
+                onDelete = { id ->
+                    viewModel.deleteTransaction(id)
                 }
             )
         }

@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eyuel.smartspend.data.local.TransactionEntity
 import com.eyuel.smartspend.domain.model.ExpenseCategory
+import com.eyuel.smartspend.domain.model.IncomeCategory
 import com.eyuel.smartspend.domain.model.TransactionType
 import com.eyuel.smartspend.ui.CategoryVisuals
 import com.eyuel.smartspend.ui.FormatUtils
@@ -94,21 +95,12 @@ private fun BankSmsEditSheet(
         CategoryVisuals.getBankVisual(transaction.bankName)
     }
 
-    val orderedCategories = remember(transaction.category) {
-        val baseOrder = listOf(
-            ExpenseCategory.TRANSPORTATION,
-            ExpenseCategory.FOOD_DINING,
-            ExpenseCategory.GROCERIES,
-            ExpenseCategory.BILLS_UTILITIES,
-            ExpenseCategory.SHOPPING,
-            ExpenseCategory.TRANSFER,
-            ExpenseCategory.INTERNAL_TRANSFER,
-            ExpenseCategory.SALARY_INCOME,
-            ExpenseCategory.HEALTHCARE,
-            ExpenseCategory.ENTERTAINMENT,
-            ExpenseCategory.OTHER,
-            ExpenseCategory.UNCATEGORIZED
-        )
+    val orderedCategories = remember(transaction.category, isIncome) {
+        val baseOrder = if (isIncome) {
+            IncomeCategory.allCategories
+        } else {
+            ExpenseCategory.allExpenseCategories
+        }
         val initialCategory = transaction.category
         if (initialCategory.isNotBlank() && initialCategory != ExpenseCategory.UNCATEGORIZED) {
             listOf(initialCategory) + baseOrder.filter { it != initialCategory }
@@ -355,21 +347,14 @@ private fun CashTransactionEditSheet(
         }
     }
 
-    val orderedCategories = remember(selectedCategory) {
-        val baseOrder = listOf(
-            ExpenseCategory.TRANSPORTATION,
-            ExpenseCategory.FOOD_DINING,
-            ExpenseCategory.GROCERIES,
-            ExpenseCategory.BILLS_UTILITIES,
-            ExpenseCategory.SHOPPING,
-            ExpenseCategory.TRANSFER,
-            ExpenseCategory.INTERNAL_TRANSFER,
-            ExpenseCategory.SALARY_INCOME,
-            ExpenseCategory.HEALTHCARE,
-            ExpenseCategory.ENTERTAINMENT,
-            ExpenseCategory.OTHER,
-            ExpenseCategory.UNCATEGORIZED
-        )
+    val isIncome = !isExpense
+
+    val orderedCategories = remember(selectedCategory, isIncome) {
+        val baseOrder = if (isIncome) {
+            IncomeCategory.allCategories
+        } else {
+            ExpenseCategory.allExpenseCategories
+        }
         if (selectedCategory.isNotBlank() && selectedCategory != ExpenseCategory.UNCATEGORIZED) {
             listOf(selectedCategory) + baseOrder.filter { it != selectedCategory }
         } else {
@@ -460,7 +445,14 @@ private fun CashTransactionEditSheet(
                         .weight(1f)
                         .clip(RoundedCornerShape(8.dp))
                         .background(if (isExpense) Color(0xFFEF4444).copy(alpha = 0.2f) else Color.Transparent)
-                        .clickable { transactionType = TransactionType.DEBIT }
+                        .clickable { 
+                            if (transactionType != TransactionType.DEBIT) {
+                                transactionType = TransactionType.DEBIT
+                                if (selectedCategory in IncomeCategory.allCategories) {
+                                    selectedCategory = ExpenseCategory.FOOD_DINING
+                                }
+                            }
+                        }
                         .padding(vertical = 9.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -478,7 +470,14 @@ private fun CashTransactionEditSheet(
                         .weight(1f)
                         .clip(RoundedCornerShape(8.dp))
                         .background(if (!isExpense) Color(0xFF10B981).copy(alpha = 0.2f) else Color.Transparent)
-                        .clickable { transactionType = TransactionType.CREDIT }
+                        .clickable { 
+                            if (transactionType != TransactionType.CREDIT) {
+                                transactionType = TransactionType.CREDIT
+                                if (selectedCategory in ExpenseCategory.allExpenseCategories) {
+                                    selectedCategory = IncomeCategory.SALARY
+                                }
+                            }
+                        }
                         .padding(vertical = 9.dp),
                     contentAlignment = Alignment.Center
                 ) {

@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.eyuel.smartspend.domain.model.ExpenseCategory
+import com.eyuel.smartspend.domain.model.IncomeCategory
 
 data class CategoryStyle(
     val icon: ImageVector,
@@ -21,6 +22,7 @@ data class BankVisual(
 object CategoryVisuals {
     fun getStyle(category: String): CategoryStyle {
         return when (category) {
+            // Expense Categories
             ExpenseCategory.FOOD_DINING -> CategoryStyle(
                 icon = Icons.Default.Restaurant,
                 color = Color(0xFFFB923C), // Orange 400
@@ -46,7 +48,7 @@ object CategoryVisuals {
                 color = Color(0xFFC084FC), // Purple 400
                 emoji = "🛍️"
             )
-            ExpenseCategory.SALARY_INCOME -> CategoryStyle(
+            ExpenseCategory.SALARY_INCOME, IncomeCategory.SALARY -> CategoryStyle(
                 icon = Icons.Default.Payments,
                 color = Color(0xFF34D399), // Emerald 400
                 emoji = "💰"
@@ -56,7 +58,7 @@ object CategoryVisuals {
                 color = Color(0xFF818CF8), // Indigo 400
                 emoji = "🔄"
             )
-            ExpenseCategory.INTERNAL_TRANSFER -> CategoryStyle(
+            ExpenseCategory.INTERNAL_TRANSFER, IncomeCategory.INTERNAL_TRANSFER -> CategoryStyle(
                 icon = Icons.Default.SyncAlt,
                 color = Color(0xFF38BDF8), // Sky 400
                 emoji = "🔁"
@@ -71,6 +73,49 @@ object CategoryVisuals {
                 color = Color(0xFFF472B6), // Pink 400
                 emoji = "🎬"
             )
+
+            // Dedicated Income Categories
+            IncomeCategory.BUSINESS -> CategoryStyle(
+                icon = Icons.Default.Storefront,
+                color = Color(0xFF2DD4BF), // Teal 400
+                emoji = "🏬"
+            )
+            IncomeCategory.FREELANCE -> CategoryStyle(
+                icon = Icons.Default.Work,
+                color = Color(0xFF38BDF8), // Sky 400
+                emoji = "💼"
+            )
+            IncomeCategory.TRANSFER -> CategoryStyle(
+                icon = Icons.Default.CallReceived,
+                color = Color(0xFF60A5FA), // Blue 400
+                emoji = "📥"
+            )
+            IncomeCategory.GIFT -> CategoryStyle(
+                icon = Icons.Default.CardGiftcard,
+                color = Color(0xFFF472B6), // Pink 400
+                emoji = "🎁"
+            )
+            IncomeCategory.INVESTMENT -> CategoryStyle(
+                icon = Icons.Default.TrendingUp,
+                color = Color(0xFFFACC15), // Yellow 400
+                emoji = "📈"
+            )
+            IncomeCategory.RENTAL -> CategoryStyle(
+                icon = Icons.Default.Home,
+                color = Color(0xFFA78BFA), // Purple 400
+                emoji = "🏠"
+            )
+            IncomeCategory.REFUND -> CategoryStyle(
+                icon = Icons.Default.Replay,
+                color = Color(0xFF4ADE80), // Green 400
+                emoji = "↩️"
+            )
+            IncomeCategory.OTHER_INCOME -> CategoryStyle(
+                icon = Icons.Default.Savings,
+                color = Color(0xFF10B981), // Emerald 500
+                emoji = "💵"
+            )
+
             ExpenseCategory.UNCATEGORIZED -> CategoryStyle(
                 icon = Icons.Default.HelpOutline,
                 color = Color(0xFF94A3B8), // Slate 400

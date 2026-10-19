@@ -37,6 +37,20 @@ object ExpenseCategory {
     const val ENTERTAINMENT = "Entertainment"
     const val OTHER = "Other"
 
+    val allExpenseCategories = listOf(
+        TRANSPORTATION,
+        FOOD_DINING,
+        GROCERIES,
+        BILLS_UTILITIES,
+        SHOPPING,
+        TRANSFER,
+        INTERNAL_TRANSFER,
+        HEALTHCARE,
+        ENTERTAINMENT,
+        OTHER,
+        UNCATEGORIZED
+    )
+
     val allCategories = listOf(
         UNCATEGORIZED,
         FOOD_DINING,
@@ -50,6 +64,32 @@ object ExpenseCategory {
         HEALTHCARE,
         ENTERTAINMENT,
         OTHER
+    )
+}
+
+object IncomeCategory {
+    const val SALARY = "Salary & Wages"
+    const val BUSINESS = "Business & Sales"
+    const val FREELANCE = "Freelance & Consulting"
+    const val TRANSFER = "Transfer / Received"
+    const val GIFT = "Gift & Allowance"
+    const val INVESTMENT = "Investment & Interest"
+    const val RENTAL = "Rental Income"
+    const val REFUND = "Refund / Cash Back"
+    const val INTERNAL_TRANSFER = "Internal Transfer"
+    const val OTHER_INCOME = "Other Income"
+
+    val allCategories = listOf(
+        SALARY,
+        BUSINESS,
+        FREELANCE,
+        TRANSFER,
+        GIFT,
+        INVESTMENT,
+        RENTAL,
+        REFUND,
+        INTERNAL_TRANSFER,
+        OTHER_INCOME
     )
 }
 
