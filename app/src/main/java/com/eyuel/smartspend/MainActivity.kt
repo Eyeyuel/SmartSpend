@@ -36,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -52,6 +53,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.text.style.TextAlign
 import com.eyuel.smartspend.domain.model.TimeframePeriod
+import com.eyuel.smartspend.domain.model.TransactionType
 import com.eyuel.smartspend.ui.DashboardUiState
 import com.eyuel.smartspend.ui.FormatUtils
 import com.eyuel.smartspend.ui.TransactionFilter
@@ -148,6 +150,11 @@ fun MainScreen(viewModel: TransactionListViewModel) {
     var showAddCashSheet by remember { mutableStateOf(false) }
     var showCashflowExplorer by remember { mutableStateOf(false) }
     var cashflowExplorerGranularity by remember { mutableStateOf(CashflowGranularity.DAILY) }
+    val allUserCategories by viewModel.allCategories.collectAsStateWithLifecycle()
+    val expenseCategories by viewModel.expenseCategories.collectAsStateWithLifecycle()
+    val incomeCategories by viewModel.incomeCategories.collectAsStateWithLifecycle()
+    val showManageCategories by viewModel.showManageCategories.collectAsStateWithLifecycle()
+    var showCreateCategoryDialogFromManage by remember { mutableStateOf(false) }
 
     // Sync Pager -> BottomNav
     LaunchedEffect(pagerState.currentPage) {
@@ -254,6 +261,11 @@ fun MainScreen(viewModel: TransactionListViewModel) {
                         timestamp = timestamp
                     )
                     showAddCashSheet = false
+                },
+                expenseCategories = expenseCategories,
+                incomeCategories = incomeCategories,
+                onCreateCategory = { name, type, iconKey, colorHex ->
+                    viewModel.createCategory(name, type, iconKey, colorHex)
                 }
             )
         }
@@ -278,6 +290,39 @@ fun MainScreen(viewModel: TransactionListViewModel) {
                 },
                 onDelete = { id ->
                     viewModel.deleteTransaction(id)
+                },
+                expenseCategories = expenseCategories,
+                incomeCategories = incomeCategories,
+                onCreateCategory = { name, type, iconKey, colorHex ->
+                    viewModel.createCategory(name, type, iconKey, colorHex)
+                }
+            )
+        }
+
+        // Modal BottomSheet for Managing Categories
+        if (showManageCategories) {
+            com.eyuel.smartspend.ui.components.ManageCategoriesBottomSheet(
+                categories = allUserCategories,
+                onDismiss = { viewModel.closeManageCategories() },
+                onCreateCategoryClick = { showCreateCategoryDialogFromManage = true },
+                onDeleteCategory = { name, reassignTo ->
+                    viewModel.deleteCategory(name, reassignTo)
+                },
+                getTransactionCount = { categoryName ->
+                    viewModel.getTransactionCountForCategory(categoryName)
+                }
+            )
+        }
+
+        // Create Category Dialog initiated from Manage Categories
+        if (showCreateCategoryDialogFromManage) {
+            com.eyuel.smartspend.ui.components.CreateCategoryDialog(
+                initialType = TransactionType.DEBIT,
+                existingCategories = allUserCategories.map { it.name },
+                onDismiss = { showCreateCategoryDialogFromManage = false },
+                onCategoryCreated = { name, type, iconKey, colorHex ->
+                    viewModel.createCategory(name, type, iconKey, colorHex)
+                    showCreateCategoryDialogFromManage = false
                 }
             )
         }
@@ -636,11 +681,42 @@ fun AnalyticsScreen(
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
-                        Text(
-                            text = uiState.activeTimeframe.displayName,
-                            fontSize = 12.sp,
-                            color = Color(0xFF94A3B8)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                onClick = { viewModel.openManageCategories() },
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF38BDF8).copy(alpha = 0.15f),
+                                border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.4f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Tune,
+                                        contentDescription = "Manage",
+                                        tint = Color(0xFF38BDF8),
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    Text(
+                                        text = "Manage",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF38BDF8)
+                                    )
+                                }
+                            }
+
+                            Text(
+                                text = uiState.activeTimeframe.displayName,
+                                fontSize = 12.sp,
+                                color = Color(0xFF94A3B8)
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))

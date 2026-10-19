@@ -87,4 +87,10 @@ interface TransactionDao {
 
     @Query("SELECT category, SUM(amount) AS totalAmount FROM transactions WHERE type = 'DEBIT' AND category != 'Internal Transfer' AND timestamp BETWEEN :startMillis AND :endMillis GROUP BY category ORDER BY totalAmount DESC")
     fun getCategorySpending(startMillis: Long, endMillis: Long): Flow<List<CategorySpending>>
+
+    @Query("SELECT COUNT(*) FROM transactions WHERE category = :category")
+    suspend fun countTransactionsByCategory(category: String): Int
+
+    @Query("UPDATE transactions SET category = :newCategory WHERE category = :oldCategory")
+    suspend fun reassignCategory(oldCategory: String, newCategory: String)
 }

@@ -9,6 +9,13 @@ import com.eyuel.smartspend.domain.parser.ParserUtils
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
+import com.eyuel.smartspend.data.local.UserCategoryDao
+import com.eyuel.smartspend.data.local.UserCategoryEntity
+import com.eyuel.smartspend.domain.model.ExpenseCategory
+import com.eyuel.smartspend.domain.model.IncomeCategory
+import com.eyuel.smartspend.ui.CategoryVisuals
+import kotlinx.coroutines.flow.onEach
+
 interface TransactionRepository {
     fun getAllTransactions(): Flow<List<TransactionEntity>>
     fun getUnreviewedTransactions(): Flow<List<TransactionEntity>>
@@ -42,10 +49,18 @@ interface TransactionRepository {
     fun getIncomeInRange(startMillis: Long, endMillis: Long): Flow<Double?>
     fun getExpensesInRange(startMillis: Long, endMillis: Long): Flow<Double?>
     fun getCategorySpending(startMillis: Long, endMillis: Long): Flow<List<CategorySpending>>
+
+    // Category Management
+    fun getAllCategories(): Flow<List<UserCategoryEntity>>
+    suspend fun ensureDefaultCategoriesSeeded()
+    suspend fun createCategory(name: String, type: TransactionType, iconKey: String, colorHex: Long): Boolean
+    suspend fun deleteCategory(name: String, reassignTo: String = ExpenseCategory.OTHER): Boolean
+    suspend fun getTransactionCountForCategory(category: String): Int
 }
 
 class TransactionRepositoryImpl(
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    private val userCategoryDao: UserCategoryDao
 ) : TransactionRepository {
 
     override fun getAllTransactions(): Flow<List<TransactionEntity>> =
@@ -267,4 +282,75 @@ class TransactionRepositoryImpl(
 
     override fun getCategorySpending(startMillis: Long, endMillis: Long): Flow<List<CategorySpending>> =
         transactionDao.getCategorySpending(startMillis, endMillis)
+
+    override fun getAllCategories(): Flow<List<UserCategoryEntity>> =
+        userCategoryDao.getAllCategories().onEach { list ->
+            list.forEach { cat ->
+                CategoryVisuals.registerCustomCategory(cat.name, cat.iconKey, cat.colorHex)
+            }
+        }
+
+    override suspend fun ensureDefaultCategoriesSeeded() {
+        val count = userCategoryDao.getCategoryCount()
+        if (count == 0) {
+            val now = System.currentTimeMillis()
+            val defaultList = listOf(
+                // Expense defaults
+                UserCategoryEntity(ExpenseCategory.FOOD_DINING, TransactionType.DEBIT, "Restaurant", 0xFFFB923C, isDefault = true, createdAt = now),
+                UserCategoryEntity(ExpenseCategory.GROCERIES, TransactionType.DEBIT, "LocalGroceryStore", 0xFF4ADE80, isDefault = true, createdAt = now),
+                UserCategoryEntity(ExpenseCategory.TRANSPORTATION, TransactionType.DEBIT, "DirectionsCar", 0xFF38BDF8, isDefault = true, createdAt = now),
+                UserCategoryEntity(ExpenseCategory.BILLS_UTILITIES, TransactionType.DEBIT, "Bolt", 0xFFFACC15, isDefault = true, createdAt = now),
+                UserCategoryEntity(ExpenseCategory.SHOPPING, TransactionType.DEBIT, "ShoppingBag", 0xFFC084FC, isDefault = true, createdAt = now),
+                UserCategoryEntity(ExpenseCategory.ENTERTAINMENT, TransactionType.DEBIT, "Theaters", 0xFFF472B6, isDefault = true, createdAt = now),
+                UserCategoryEntity(ExpenseCategory.HEALTHCARE, TransactionType.DEBIT, "LocalHospital", 0xFFF43F5E, isDefault = true, createdAt = now),
+                UserCategoryEntity(ExpenseCategory.TRANSFER, TransactionType.DEBIT, "SwapHoriz", 0xFF818CF8, isDefault = true, createdAt = now),
+                UserCategoryEntity(ExpenseCategory.OTHER, TransactionType.DEBIT, "Category", 0xFF94A3B8, isDefault = true, createdAt = now),
+
+                // Income defaults
+                UserCategoryEntity(IncomeCategory.SALARY, TransactionType.CREDIT, "Payments", 0xFF34D399, isDefault = true, createdAt = now),
+                UserCategoryEntity(IncomeCategory.BUSINESS, TransactionType.CREDIT, "Storefront", 0xFF2DD4BF, isDefault = true, createdAt = now),
+                UserCategoryEntity(IncomeCategory.FREELANCE, TransactionType.CREDIT, "Work", 0xFF38BDF8, isDefault = true, createdAt = now),
+                UserCategoryEntity(IncomeCategory.TRANSFER, TransactionType.CREDIT, "SwapHoriz", 0xFF818CF8, isDefault = true, createdAt = now),
+                UserCategoryEntity(IncomeCategory.GIFT, TransactionType.CREDIT, "CardGiftcard", 0xFFF472B6, isDefault = true, createdAt = now),
+                UserCategoryEntity(IncomeCategory.INVESTMENT, TransactionType.CREDIT, "TrendingUp", 0xFFA78BFA, isDefault = true, createdAt = now),
+                UserCategoryEntity(IncomeCategory.RENTAL, TransactionType.CREDIT, "Home", 0xFF60A5FA, isDefault = true, createdAt = now),
+                UserCategoryEntity(IncomeCategory.REFUND, TransactionType.CREDIT, "Savings", 0xFF2DD4BF, isDefault = true, createdAt = now),
+                UserCategoryEntity(IncomeCategory.OTHER_INCOME, TransactionType.CREDIT, "Category", 0xFF94A3B8, isDefault = true, createdAt = now)
+            )
+            userCategoryDao.insertCategories(defaultList)
+        }
+    }
+
+    override suspend fun createCategory(
+        name: String,
+        type: TransactionType,
+        iconKey: String,
+        colorHex: Long
+    ): Boolean {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return false
+        val existing = userCategoryDao.getCategoryByName(trimmed)
+        if (existing != null) return false
+        val entity = UserCategoryEntity(
+            name = trimmed,
+            type = type,
+            iconKey = iconKey,
+            colorHex = colorHex,
+            isDefault = false,
+            createdAt = System.currentTimeMillis()
+        )
+        userCategoryDao.insertCategory(entity)
+        CategoryVisuals.registerCustomCategory(trimmed, iconKey, colorHex)
+        return true
+    }
+
+    override suspend fun deleteCategory(name: String, reassignTo: String): Boolean {
+        transactionDao.reassignCategory(name, reassignTo)
+        CategoryVisuals.unregisterCustomCategory(name)
+        return userCategoryDao.deleteCategory(name) > 0
+    }
+
+    override suspend fun getTransactionCountForCategory(category: String): Int {
+        return transactionDao.countTransactionsByCategory(category)
+    }
 }

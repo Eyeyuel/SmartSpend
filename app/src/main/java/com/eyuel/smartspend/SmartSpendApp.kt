@@ -17,7 +17,7 @@ class SmartSpendApp : Application() {
         super.onCreate()
         instance = this
         database = SmartSpendDatabase.getDatabase(this)
-        repository = TransactionRepositoryImpl(database.transactionDao())
+        repository = TransactionRepositoryImpl(database.transactionDao(), database.userCategoryDao())
     }
 
     companion object {

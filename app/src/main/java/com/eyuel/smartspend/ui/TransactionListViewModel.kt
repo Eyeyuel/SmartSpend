@@ -8,6 +8,8 @@ import com.eyuel.smartspend.SmartSpendApp
 import com.eyuel.smartspend.data.local.TransactionEntity
 import com.eyuel.smartspend.data.repository.CsvExportHelper
 import com.eyuel.smartspend.data.repository.SmsSyncManager
+import com.eyuel.smartspend.data.local.UserCategoryEntity
+import com.eyuel.smartspend.domain.model.IncomeCategory
 import com.eyuel.smartspend.domain.model.ExpenseCategory
 import com.eyuel.smartspend.domain.model.TimeframePeriod
 import com.eyuel.smartspend.domain.model.TransactionType
@@ -106,8 +108,37 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
         UiControls(tf.t, tf.r, tf.f, tf.c, query, editing, tab, syncing, syncMsg, granularity, pages)
     }
 
+    private val _showManageCategories = MutableStateFlow(false)
+    val showManageCategories: StateFlow<Boolean> = _showManageCategories.asStateFlow()
+
+    fun openManageCategories() {
+        _showManageCategories.value = true
+    }
+
+    fun closeManageCategories() {
+        _showManageCategories.value = false
+    }
+
+    val allCategories: StateFlow<List<UserCategoryEntity>> = repository.getAllCategories()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val expenseCategories: StateFlow<List<String>> = allCategories
+        .map { list ->
+            val names = list.filter { it.type == TransactionType.DEBIT }.map { it.name }
+            if (names.isNotEmpty()) names else ExpenseCategory.allExpenseCategories
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ExpenseCategory.allExpenseCategories)
+
+    val incomeCategories: StateFlow<List<String>> = allCategories
+        .map { list ->
+            val names = list.filter { it.type == TransactionType.CREDIT }.map { it.name }
+            if (names.isNotEmpty()) names else IncomeCategory.allCategories
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, IncomeCategory.allCategories)
+
     init {
         viewModelScope.launch {
+            repository.ensureDefaultCategoriesSeeded()
             repository.rescanAndHealTransactions()
         }
     }
@@ -774,5 +805,33 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             maxAmount = recentMax,
             pages = pages
         )
+    }
+
+    fun createCategory(
+        name: String,
+        type: TransactionType,
+        iconKey: String,
+        colorHex: Long,
+        onResult: (Boolean) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            val success = repository.createCategory(name, type, iconKey, colorHex)
+            onResult(success)
+        }
+    }
+
+    fun deleteCategory(
+        name: String,
+        reassignTo: String = ExpenseCategory.OTHER,
+        onResult: (Boolean) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            val success = repository.deleteCategory(name, reassignTo)
+            onResult(success)
+        }
+    }
+
+    suspend fun getTransactionCountForCategory(category: String): Int {
+        return repository.getTransactionCountForCategory(category)
     }
 }

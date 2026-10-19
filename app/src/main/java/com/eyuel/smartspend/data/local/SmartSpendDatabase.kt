@@ -8,19 +8,37 @@ import androidx.room.TypeConverters
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 
+import androidx.room.migration.Migration
+
 @Database(
-    entities = [TransactionEntity::class],
-    version = 2,
+    entities = [TransactionEntity::class, UserCategoryEntity::class],
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class SmartSpendDatabase : RoomDatabase() {
 
     abstract fun transactionDao(): TransactionDao
+    abstract fun userCategoryDao(): UserCategoryDao
 
     companion object {
         @Volatile
         private var INSTANCE: SmartSpendDatabase? = null
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS user_categories (
+                        name TEXT NOT NULL PRIMARY KEY,
+                        type TEXT NOT NULL,
+                        iconKey TEXT NOT NULL,
+                        colorHex INTEGER NOT NULL,
+                        isDefault INTEGER NOT NULL,
+                        createdAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+            }
+        }
 
         fun getDatabase(context: Context): SmartSpendDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -29,6 +47,7 @@ abstract class SmartSpendDatabase : RoomDatabase() {
                     SmartSpendDatabase::class.java,
                     "smartspend_database"
                 )
+                    .addMigrations(MIGRATION_2_3)
                     .fallbackToDestructiveMigration()
                     .addCallback(object : Callback() {
                         override fun onOpen(db: SupportSQLiteDatabase) {

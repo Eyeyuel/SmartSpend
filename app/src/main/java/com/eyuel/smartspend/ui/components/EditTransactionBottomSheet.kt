@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -45,7 +46,10 @@ fun EditTransactionBottomSheet(
     onDismiss: () -> Unit,
     onSave: (id: Long, description: String, category: String) -> Unit,
     onUpdateCash: ((id: Long, amount: Double, type: TransactionType, category: String, description: String, timestamp: Long) -> Unit)? = null,
-    onDelete: ((id: Long) -> Unit)? = null
+    onDelete: ((id: Long) -> Unit)? = null,
+    expenseCategories: List<String> = ExpenseCategory.allExpenseCategories,
+    incomeCategories: List<String> = IncomeCategory.allCategories,
+    onCreateCategory: ((name: String, type: TransactionType, iconKey: String, colorHex: Long) -> Unit)? = null
 ) {
     val isCash = remember(transaction) {
         transaction.bankName.equals("Cash", ignoreCase = true) ||
@@ -59,14 +63,20 @@ fun EditTransactionBottomSheet(
             transaction = transaction,
             onDismiss = onDismiss,
             onUpdateCash = onUpdateCash,
-            onDelete = onDelete
+            onDelete = onDelete,
+            expenseCategories = expenseCategories,
+            incomeCategories = incomeCategories,
+            onCreateCategory = onCreateCategory
         )
     } else {
         // Original Bank SMS Bottom Sheet (Restored exactly as before)
         BankSmsEditSheet(
             transaction = transaction,
             onDismiss = onDismiss,
-            onSave = onSave
+            onSave = onSave,
+            expenseCategories = expenseCategories,
+            incomeCategories = incomeCategories,
+            onCreateCategory = onCreateCategory
         )
     }
 }
@@ -79,10 +89,14 @@ fun EditTransactionBottomSheet(
 private fun BankSmsEditSheet(
     transaction: TransactionEntity,
     onDismiss: () -> Unit,
-    onSave: (id: Long, description: String, category: String) -> Unit
+    onSave: (id: Long, description: String, category: String) -> Unit,
+    expenseCategories: List<String> = ExpenseCategory.allExpenseCategories,
+    incomeCategories: List<String> = IncomeCategory.allCategories,
+    onCreateCategory: ((name: String, type: TransactionType, iconKey: String, colorHex: Long) -> Unit)? = null
 ) {
     var description by remember(transaction) { mutableStateOf(transaction.description) }
     var selectedCategory by remember(transaction) { mutableStateOf(transaction.category) }
+    var showCreateCategoryDialog by remember { mutableStateOf(false) }
 
     val formattedDate = remember(transaction.timestamp) {
         val sdf = SimpleDateFormat("EEE, dd MMM yyyy • HH:mm", Locale.getDefault())
@@ -95,11 +109,11 @@ private fun BankSmsEditSheet(
         CategoryVisuals.getBankVisual(transaction.bankName)
     }
 
-    val orderedCategories = remember(transaction.category, isIncome) {
+    val orderedCategories = remember(transaction.category, isIncome, expenseCategories, incomeCategories) {
         val baseOrder = if (isIncome) {
-            IncomeCategory.allCategories
+            incomeCategories
         } else {
-            ExpenseCategory.allExpenseCategories
+            expenseCategories
         }
         val initialCategory = transaction.category
         if (initialCategory.isNotBlank() && initialCategory != ExpenseCategory.UNCATEGORIZED) {
@@ -226,6 +240,33 @@ private fun BankSmsEditSheet(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // + New Category Chip
+                    Surface(
+                        onClick = { showCreateCategoryDialog = true },
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF38BDF8).copy(alpha = 0.12f),
+                        border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.5f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "New Category",
+                                tint = Color(0xFF38BDF8),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "New",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF38BDF8)
+                            )
+                        }
+                    }
+
                     orderedCategories.forEach { cat ->
                         val isSelected = cat == selectedCategory
                         val style = CategoryVisuals.getStyle(cat)
@@ -299,6 +340,20 @@ private fun BankSmsEditSheet(
             }
         }
     }
+
+    if (showCreateCategoryDialog) {
+        CreateCategoryDialog(
+            initialType = transaction.type,
+            existingCategories = orderedCategories,
+            onDismiss = { showCreateCategoryDialog = false },
+            onCategoryCreated = { name, type, iconKey, colorHex ->
+                onCreateCategory?.invoke(name, type, iconKey, colorHex)
+                selectedCategory = name
+                onSave(transaction.id, description, name)
+                showCreateCategoryDialog = false
+            }
+        )
+    }
 }
 
 /**
@@ -310,7 +365,10 @@ private fun CashTransactionEditSheet(
     transaction: TransactionEntity,
     onDismiss: () -> Unit,
     onUpdateCash: ((id: Long, amount: Double, type: TransactionType, category: String, description: String, timestamp: Long) -> Unit)?,
-    onDelete: ((id: Long) -> Unit)?
+    onDelete: ((id: Long) -> Unit)?,
+    expenseCategories: List<String> = ExpenseCategory.allExpenseCategories,
+    incomeCategories: List<String> = IncomeCategory.allCategories,
+    onCreateCategory: ((name: String, type: TransactionType, iconKey: String, colorHex: Long) -> Unit)? = null
 ) {
     var rawAmount by remember(transaction) {
         mutableStateOf(
@@ -324,6 +382,7 @@ private fun CashTransactionEditSheet(
     var selectedTimestamp by remember(transaction) { mutableLongStateOf(transaction.timestamp) }
     var showDatePickerDialog by remember { mutableStateOf(false) }
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
+    var showCreateCategoryDialog by remember { mutableStateOf(false) }
 
     val isExpense = transactionType == TransactionType.DEBIT
     val parsedAmount = rawAmount.toDoubleOrNull() ?: 0.0
@@ -349,11 +408,11 @@ private fun CashTransactionEditSheet(
 
     val isIncome = !isExpense
 
-    val orderedCategories = remember(selectedCategory, isIncome) {
+    val orderedCategories = remember(selectedCategory, isIncome, expenseCategories, incomeCategories) {
         val baseOrder = if (isIncome) {
-            IncomeCategory.allCategories
+            incomeCategories
         } else {
-            ExpenseCategory.allExpenseCategories
+            expenseCategories
         }
         if (selectedCategory.isNotBlank() && selectedCategory != ExpenseCategory.UNCATEGORIZED) {
             listOf(selectedCategory) + baseOrder.filter { it != selectedCategory }
@@ -670,6 +729,33 @@ private fun CashTransactionEditSheet(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // + New Category Chip
+                    Surface(
+                        onClick = { showCreateCategoryDialog = true },
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF38BDF8).copy(alpha = 0.12f),
+                        border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.5f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "New Category",
+                                tint = Color(0xFF38BDF8),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "New",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF38BDF8)
+                            )
+                        }
+                    }
+
                     orderedCategories.forEach { cat ->
                         val isSelected = cat == selectedCategory
                         val style = CategoryVisuals.getStyle(cat)
@@ -885,5 +971,18 @@ private fun CashTransactionEditSheet(
         ) {
             DatePicker(state = datePickerState)
         }
+    }
+
+    if (showCreateCategoryDialog) {
+        CreateCategoryDialog(
+            initialType = transactionType,
+            existingCategories = orderedCategories,
+            onDismiss = { showCreateCategoryDialog = false },
+            onCategoryCreated = { name, type, iconKey, colorHex ->
+                onCreateCategory?.invoke(name, type, iconKey, colorHex)
+                selectedCategory = name
+                showCreateCategoryDialog = false
+            }
+        )
     }
 }

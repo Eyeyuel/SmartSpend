@@ -39,11 +39,16 @@ import com.eyuel.smartspend.ui.FormatUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
+import androidx.compose.material.icons.filled.Add
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddCashTransactionBottomSheet(
     onDismiss: () -> Unit,
-    onSave: (amount: Double, type: TransactionType, category: String, description: String, timestamp: Long) -> Unit
+    onSave: (amount: Double, type: TransactionType, category: String, description: String, timestamp: Long) -> Unit,
+    expenseCategories: List<String> = ExpenseCategory.allExpenseCategories,
+    incomeCategories: List<String> = IncomeCategory.allCategories,
+    onCreateCategory: ((name: String, type: TransactionType, iconKey: String, colorHex: Long) -> Unit)? = null
 ) {
     var rawAmount by remember { mutableStateOf("") }
     var transactionType by remember { mutableStateOf(TransactionType.DEBIT) }
@@ -51,6 +56,7 @@ fun AddCashTransactionBottomSheet(
     var description by remember { mutableStateOf("") }
     var selectedTimestamp by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var showDatePickerDialog by remember { mutableStateOf(false) }
+    var showCreateCategoryDialog by remember { mutableStateOf(false) }
 
     val focusRequester = remember { FocusRequester() }
 
@@ -58,10 +64,10 @@ fun AddCashTransactionBottomSheet(
 
     // Switch default category when toggling type
     LaunchedEffect(transactionType) {
-        if (transactionType == TransactionType.CREDIT && (selectedCategory in ExpenseCategory.allExpenseCategories || selectedCategory == ExpenseCategory.FOOD_DINING)) {
-            selectedCategory = IncomeCategory.SALARY
-        } else if (transactionType == TransactionType.DEBIT && (selectedCategory in IncomeCategory.allCategories || selectedCategory == ExpenseCategory.SALARY_INCOME)) {
-            selectedCategory = ExpenseCategory.FOOD_DINING
+        if (transactionType == TransactionType.CREDIT && (selectedCategory in expenseCategories || selectedCategory == ExpenseCategory.FOOD_DINING)) {
+            selectedCategory = incomeCategories.firstOrNull() ?: IncomeCategory.SALARY
+        } else if (transactionType == TransactionType.DEBIT && (selectedCategory in incomeCategories || selectedCategory == ExpenseCategory.SALARY_INCOME)) {
+            selectedCategory = expenseCategories.firstOrNull() ?: ExpenseCategory.FOOD_DINING
         }
     }
 
@@ -69,11 +75,11 @@ fun AddCashTransactionBottomSheet(
     val isSaveEnabled = parsedAmount > 0.0
 
     // Context-aware categories matching transaction type
-    val orderedCategories = remember(selectedCategory, isExpense) {
+    val orderedCategories = remember(selectedCategory, isExpense, expenseCategories, incomeCategories) {
         val baseOrder = if (isExpense) {
-            ExpenseCategory.allExpenseCategories
+            expenseCategories
         } else {
-            IncomeCategory.allCategories
+            incomeCategories
         }
         if (selectedCategory.isNotBlank() && selectedCategory != ExpenseCategory.UNCATEGORIZED) {
             listOf(selectedCategory) + baseOrder.filter { it != selectedCategory }
@@ -341,6 +347,33 @@ fun AddCashTransactionBottomSheet(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // + New Category Chip
+                    Surface(
+                        onClick = { showCreateCategoryDialog = true },
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF38BDF8).copy(alpha = 0.12f),
+                        border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.5f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "New Category",
+                                tint = Color(0xFF38BDF8),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "New",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF38BDF8)
+                            )
+                        }
+                    }
+
                     orderedCategories.forEach { cat ->
                         val isSelected = cat == selectedCategory
                         val style = CategoryVisuals.getStyle(cat)
@@ -568,5 +601,18 @@ fun AddCashTransactionBottomSheet(
         ) {
             DatePicker(state = datePickerState)
         }
+    }
+
+    if (showCreateCategoryDialog) {
+        CreateCategoryDialog(
+            initialType = transactionType,
+            existingCategories = orderedCategories,
+            onDismiss = { showCreateCategoryDialog = false },
+            onCategoryCreated = { name, type, iconKey, colorHex ->
+                onCreateCategory?.invoke(name, type, iconKey, colorHex)
+                selectedCategory = name
+                showCreateCategoryDialog = false
+            }
+        )
     }
 }

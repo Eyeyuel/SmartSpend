@@ -19,9 +19,90 @@ data class BankVisual(
     val shortName: String
 )
 
+data class AvailableIcon(
+    val key: String,
+    val icon: ImageVector,
+    val label: String
+)
+
+data class AvailableColor(
+    val hex: Long,
+    val label: String
+)
+
 object CategoryVisuals {
+
+    val selectableColors = listOf(
+        AvailableColor(0xFF38BDF8, "Sky Blue"),
+        AvailableColor(0xFF34D399, "Emerald"),
+        AvailableColor(0xFFFB923C, "Orange"),
+        AvailableColor(0xFFFACC15, "Amber"),
+        AvailableColor(0xFFC084FC, "Purple"),
+        AvailableColor(0xFFF472B6, "Pink"),
+        AvailableColor(0xFFF43F5E, "Rose"),
+        AvailableColor(0xFF2DD4BF, "Teal"),
+        AvailableColor(0xFF818CF8, "Indigo"),
+        AvailableColor(0xFF60A5FA, "Blue"),
+        AvailableColor(0xFFA78BFA, "Violet"),
+        AvailableColor(0xFF94A3B8, "Slate")
+    )
+
+    val selectableIcons = listOf(
+        AvailableIcon("Restaurant", Icons.Default.Restaurant, "Food"),
+        AvailableIcon("LocalCafe", Icons.Default.LocalCafe, "Coffee"),
+        AvailableIcon("LocalGroceryStore", Icons.Default.LocalGroceryStore, "Groceries"),
+        AvailableIcon("ShoppingBag", Icons.Default.ShoppingBag, "Shopping"),
+        AvailableIcon("DirectionsCar", Icons.Default.DirectionsCar, "Car"),
+        AvailableIcon("LocalGasStation", Icons.Default.LocalGasStation, "Fuel"),
+        AvailableIcon("Bolt", Icons.Default.Bolt, "Utilities"),
+        AvailableIcon("Home", Icons.Default.Home, "Housing"),
+        AvailableIcon("FitnessCenter", Icons.Default.FitnessCenter, "Gym"),
+        AvailableIcon("SportsEsports", Icons.Default.SportsEsports, "Gaming"),
+        AvailableIcon("Theaters", Icons.Default.Theaters, "Movies"),
+        AvailableIcon("School", Icons.Default.School, "Education"),
+        AvailableIcon("Book", Icons.Default.Book, "Books"),
+        AvailableIcon("Pets", Icons.Default.Pets, "Pets"),
+        AvailableIcon("Flight", Icons.Default.Flight, "Travel"),
+        AvailableIcon("LocalHospital", Icons.Default.LocalHospital, "Health"),
+        AvailableIcon("Medication", Icons.Default.Medication, "Pharmacy"),
+        AvailableIcon("Spa", Icons.Default.Spa, "Beauty"),
+        AvailableIcon("Work", Icons.Default.Work, "Work"),
+        AvailableIcon("Payments", Icons.Default.Payments, "Salary"),
+        AvailableIcon("Storefront", Icons.Default.Storefront, "Business"),
+        AvailableIcon("Savings", Icons.Default.Savings, "Savings"),
+        AvailableIcon("TrendingUp", Icons.Default.TrendingUp, "Invest"),
+        AvailableIcon("CardGiftcard", Icons.Default.CardGiftcard, "Gift"),
+        AvailableIcon("SwapHoriz", Icons.Default.SwapHoriz, "Transfer"),
+        AvailableIcon("Category", Icons.Default.Category, "General")
+    )
+
+    private val customStyles = java.util.concurrent.ConcurrentHashMap<String, CategoryStyle>()
+
+    fun getIconByKey(key: String): ImageVector {
+        return selectableIcons.firstOrNull { it.key.equals(key, ignoreCase = true) }?.icon
+            ?: Icons.Default.Category
+    }
+
+    fun registerCustomCategory(name: String, iconKey: String, colorHex: Long) {
+        customStyles[name.trim().lowercase()] = CategoryStyle(
+            icon = getIconByKey(iconKey),
+            color = Color(colorHex),
+            emoji = "🏷️"
+        )
+    }
+
+    fun unregisterCustomCategory(name: String) {
+        customStyles.remove(name.trim().lowercase())
+    }
+
     fun getStyle(category: String): CategoryStyle {
-        return when (category) {
+        val trimmed = category.trim()
+        val custom = customStyles[trimmed.lowercase()]
+        if (custom != null) {
+            return custom
+        }
+
+        return when (trimmed) {
             // Expense Categories
             ExpenseCategory.FOOD_DINING -> CategoryStyle(
                 icon = Icons.Default.Restaurant,
