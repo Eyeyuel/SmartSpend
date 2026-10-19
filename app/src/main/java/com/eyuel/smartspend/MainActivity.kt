@@ -103,7 +103,7 @@ fun MainScreen(viewModel: TransactionListViewModel) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // SMS & Notification Permission Handling
+    // SMS Permission Handling
     var hasSmsPermissions by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED &&
@@ -204,14 +204,11 @@ fun MainScreen(viewModel: TransactionListViewModel) {
                             hasSmsPermissions = hasSmsPermissions,
                             viewModel = viewModel,
                             onRequestPermissions = {
-                                val perms = mutableListOf(
+                                val perms = arrayOf(
                                     Manifest.permission.RECEIVE_SMS,
                                     Manifest.permission.READ_SMS
                                 )
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    perms.add(Manifest.permission.POST_NOTIFICATIONS)
-                                }
-                                permissionLauncher.launch(perms.toTypedArray())
+                                permissionLauncher.launch(perms)
                             },
                             modifier = Modifier.fillMaxSize()
                         )

@@ -1,7 +1,7 @@
-# SmartSpend 💳
+# SmartSpend
 
 <p align="center">
-  <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="96" height="96" alt="SmartSpend Logo" />
+  <img src="docs/logo.png" width="96" height="96" alt="SmartSpend Logo" />
 </p>
 
 <p align="center">
@@ -18,7 +18,7 @@
 
 ---
 
-## 📥 Download the App
+## Download App
 
 Download the latest universally compatible release APK directly to your Android device:
 
@@ -33,7 +33,7 @@ Download the latest universally compatible release APK directly to your Android 
 
 ---
 
-## 🔒 100% Private, Local-First, Zero Ads
+## 100% Private, Local-First, Zero Ads
 
 > **Your financial privacy is non-negotiable.**
 >
@@ -44,7 +44,7 @@ Download the latest universally compatible release APK directly to your Android 
 
 ---
 
-## 📱 Screenshots
+## Screenshots
 
 <table align="center">
   <tr>
@@ -65,7 +65,7 @@ Download the latest universally compatible release APK directly to your Android 
 
 ---
 
-## ✨ Features
+## Key Features
 
 - **Automated Bank SMS Ingestion**:
   - Automatically intercepts and categorizes incoming SMS notifications in real-time from major Ethiopian banks (Commercial Bank of Ethiopia, Telebirr, Awash Bank, Dashen Bank, Nib International Bank, Bank of Abyssinia, etc.).
@@ -86,15 +86,15 @@ Download the latest universally compatible release APK directly to your Android 
 
 ---
 
-## 🧠 How the Logic Works
+## Architecture & Workflow
 
 ```
                                  [ Incoming SMS ]
                                         │
                                         ▼
-                               ┌──────────────────┐
-                               │   SmsReceiver    │ (BroadcastReceiver)
-                               └────────┬─────────┘
+                                ┌──────────────────┐
+                                │   SmsReceiver    │ (BroadcastReceiver)
+                                └────────┬─────────┘
                                         │
                                         ▼
                             ┌────────────────────────┐
@@ -136,7 +136,7 @@ Download the latest universally compatible release APK directly to your Android 
 
 ---
 
-## 🛠️ Clone & Build Locally
+## Clone & Build Locally
 
 ### Prerequisites:
 - **Android Studio** Ladybug (2024.2+) or newer
@@ -171,18 +171,18 @@ The universal release APK will be generated at:
 
 ---
 
-## 🛡️ Required Permissions Explained
+## Permissions
 
 | Permission | Purpose |
 |---|---|
 | `android.permission.RECEIVE_SMS` | Intercept incoming bank notification alerts in real-time. |
 | `android.permission.READ_SMS` | Scan historical banking alerts from inbox upon user request. |
-| `android.permission.POST_NOTIFICATIONS` | Deliver instant transaction review alerts (Android 13+). |
 
 *Note: SmartSpend never requests internet access (`android.permission.INTERNET` is not included in the manifest). The app cannot communicate with any external server by design.*
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE).
+

@@ -4,7 +4,6 @@
     <!-- SMS Permissions for expense tracking -->
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Optional telephony hardware so tablets and Wi-Fi devices can install the app -->
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
